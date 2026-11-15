@@ -307,15 +307,20 @@ class AppController {
 
     // Update target info
     const t = data.target;
+    const targetLabel = document.getElementById('hudTargetName');
+    const targetDesc = document.getElementById('targetDescription');
+    const metaType = document.getElementById('metaType');
+
     if (t) {
       this.state.ra = t.ra;
       this.state.dec = t.dec;
-      const targetLabel = document.getElementById('hudTargetName');
       if (targetLabel) targetLabel.textContent = t.name;
-      const targetDesc = document.getElementById('targetDescription');
       if (targetDesc) targetDesc.textContent = t.description;
-      const metaType = document.getElementById('metaType');
       if (metaType) metaType.textContent = t.kind;
+    } else {
+      if (targetLabel) targetLabel.textContent = `Campo RA ${this.state.ra.toFixed(3)}° Dec ${this.state.dec.toFixed(3)}°`;
+      if (targetDesc) targetDesc.textContent = `Visualizando parche de cielo personalizado en RA: ${this.state.ra.toFixed(4)}°, Dec: ${this.state.dec.toFixed(4)}° (FOV: ${this.state.fov} arcmin). Se simulan y contrastan las 8 épocas de observación del survey SPHEREx en busca de objetos móviles o estrellas variables.`;
+      if (metaType) metaType.textContent = "Coordenadas astronómicas personalizadas";
     }
 
     // Update mode badge

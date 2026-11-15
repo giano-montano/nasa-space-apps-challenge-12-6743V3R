@@ -104,7 +104,7 @@ class SkyCanvasViewer {
     this.currentEpoch = epochIdx;
     this.mode = metadata.mode || this.mode;
     this.fovArcmin = metadata.fov || this.fovArcmin;
-    this.targetInfo = metadata.target || this.targetInfo;
+    this.targetInfo = (metadata.target !== undefined) ? metadata.target : null;
 
     this.imageLoaded = false;
     this.imageElement.onload = () => {

@@ -130,6 +130,41 @@ def generate_field_frames(
             "confidence": 0.98,
             "spectral_class": target.get("spectral_type", "Desconocido")
         })
+    elif not has_target:
+        # For custom coordinates: deterministically inject a moving candidate in 70% of sky fields
+        if rng.uniform(0, 1) > 0.3:
+            cand_speed = rng.uniform(0.6, 2.8)  # arcsec/yr
+            cand_angle = rng.uniform(0, 2 * math.pi)
+            cand_pm_ra = cand_speed * math.cos(cand_angle) * 1000.0
+            cand_pm_dec = cand_speed * math.sin(cand_angle) * 1000.0
+            cand_start_x = rng.uniform(center_px - 100, center_px + 100)
+            cand_start_y = rng.uniform(center_px - 100, center_px + 100)
+            cand_flux = rng.uniform(60.0, 110.0)
+
+            for epoch_idx in range(num_epochs):
+                t_years = epoch_idx * 0.5
+                d_ra_arcsec = (cand_pm_ra / 1000.0) * t_years
+                d_dec_arcsec = (cand_pm_dec / 1000.0) * t_years
+                dx_px = - (d_ra_arcsec / arcsec_per_pixel)
+                dy_px = - (d_dec_arcsec / arcsec_per_pixel)
+                cx = cand_start_x + dx_px
+                cy = cand_start_y + dy_px
+
+                sigma = 2.8 / 2.355
+                r2 = (x_grid - cx)**2 + (y_grid - cy)**2
+                mask = r2 < (5.0 * sigma)**2
+                raw_frames[epoch_idx][mask] += cand_flux * np.exp(-0.5 * r2[mask] / (sigma**2))
+
+            candidates.append({
+                "id": f"cand-spx-{seed}",
+                "name": f"Candidato Móvil SPX-{seed % 9999:04d}",
+                "ra_deg": round(ra, 5),
+                "dec_deg": round(dec, 5),
+                "proper_motion_arcsec_yr": round(cand_speed, 3),
+                "status": "Candidato Asistido (No Confirmado)",
+                "confidence": round(rng.uniform(0.79, 0.94), 2),
+                "spectral_class": "Posible Asteroide / TNO / Enana Fría"
+            })
 
     return {
         "target": target,
