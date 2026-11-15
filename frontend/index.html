@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drift — SPHEREx Sky Viewer | NASA Space Apps Challenge 2026</title>
+  
+  <!-- Google Fonts: Schibsted Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/styles.css">
+
+  <!-- CDS Aladin Lite v3 (Opcional para contexto de otros catálogos) -->
+  <script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8" async></script>
+</head>
+<body>
+
+  <!-- Top Navigation & Coordinates Bar -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <svg width="34" height="20" viewBox="0 0 34 20" fill="none" aria-hidden="true">
+          <circle cx="5" cy="15" r="2.5" fill="#FF5C93" fill-opacity="0.3"></circle>
+          <circle cx="15" cy="11" r="3.2" fill="#FF5C93" fill-opacity="0.6"></circle>
+          <circle cx="28" cy="5.5" r="4.5" fill="#FF5C93"></circle>
+          <path d="M5 15 Q 16 12 28 5.5" stroke="#FF5C93" stroke-width="1.2" stroke-dasharray="2 3" stroke-opacity="0.5"></path>
+        </svg>
+        <h1 class="brand-title">Drift</h1>
+      </div>
+      <span class="brand-subtitle">SPHEREx Sky Viewer</span>
+    </div>
+
+    <!-- Live Coordinate Form -->
+    <form id="coordsForm" class="coords-bar">
+      <div class="input-field-group">
+        <label for="raInput">Ascensión Recta (RA)</label>
+        <input type="text" id="raInput" class="text-input" value="133.7951" placeholder="Ej. 133.7951 o 08h55m10s" required>
+      </div>
+
+      <div class="input-field-group">
+        <label for="decInput">Declinación (Dec)</label>
+        <input type="text" id="decInput" class="text-input" value="-7.2451" placeholder="Ej. -7.2451 o -07°14′42″" required>
+      </div>
+
+      <button type="submit" class="btn-primary" style="margin-top: 18px;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+        Ver parche de cielo
+      </button>
+    </form>
+
+    <div class="header-actions">
+      <button id="btnStartTour" class="btn-secondary" title="¿Qué estoy viendo?">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" stroke="currentColor" fill="none"/><text x="8" y="11.5" text-anchor="middle" font-size="10" font-weight="bold">?</text></svg>
+        Guía Rápida
+      </button>
+      <button id="btnCopyLink" class="btn-secondary" title="Copiar enlace con coordenadas">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L7.335 10.993a2 2 0 1 1-2.828-2.828l1.372-1.372a.998.998 0 0 0-.164-.251z"/><path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-1.373 1.372c.07.086.13.18.179.28.324-.316.592-.693.793-1.121a3 3 0 0 0-.74-3.468 3 3 0 0 0-4.223.229z"/></svg>
+        Copiar enlace
+      </button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Interface -->
+  <main class="app-main">
+
+    <!-- Column 1: Test Targets & Viewing Modes -->
+    <aside class="panel-card">
+      <div>
+        <h2 class="panel-title">Objetos de prueba (NASA)</h2>
+        <p style="font-size: 12px; color: var(--text-faint); margin-top: 4px;">Casos obligatorios evaluados por el jurado:</p>
+      </div>
+
+      <div class="targets-list">
+        <button class="target-item active" data-target-id="wise0855">
+          <div class="target-header">
+            <span class="target-name">WISE 0855</span>
+            <span class="target-badge">Movimiento Alto</span>
+          </div>
+          <div class="target-kind">Enana marrón fría (Y0) a 7.5 al</div>
+        </button>
+
+        <button class="target-item" data-target-id="barnard">
+          <div class="target-header">
+            <span class="target-name">Estrella de Barnard</span>
+            <span class="target-badge">10.3″/año</span>
+          </div>
+          <div class="target-kind">Mayor velocidad angular del cielo</div>
+        </button>
+
+        <button class="target-item" data-target-id="indi">
+          <div class="target-header">
+            <span class="target-name">Epsilon Indi B</span>
+            <span class="target-badge">Par Binario</span>
+          </div>
+          <div class="target-kind">Dos enanas marrones en órbita</div>
+        </button>
+
+        <button class="target-item" data-target-id="rw_aur">
+          <div class="target-header">
+            <span class="target-name">RW Aurigae</span>
+            <span class="target-badge variable">Variable</span>
+          </div>
+          <div class="target-kind">Ocultaciones por polvo protoplanetario</div>
+        </button>
+
+        <button class="target-item" data-target-id="r_dra">
+          <div class="target-header">
+            <span class="target-name">R Draconis</span>
+            <span class="target-badge variable">Mira</span>
+          </div>
+          <div class="target-kind">Gigante pulsante periódica (245 d)</div>
+        </button>
+      </div>
+
+      <!-- Mode Selector -->
+      <div style="margin-top: 8px;">
+        <h2 class="panel-title">Modo de revelado</h2>
+        <div style="display: flex; gap: 6px; margin-top: 10px;">
+          <button class="btn-secondary mode-btn active" data-mode="blink" style="flex: 1;">Parpadeo</button>
+          <button class="btn-secondary mode-btn" data-mode="diff" style="flex: 1;">Diferencia</button>
+          <button class="btn-secondary mode-btn" data-mode="stack" style="flex: 1;">Apilado</button>
+        </div>
+      </div>
+
+      <!-- Field of View Selector -->
+      <div style="margin-top: 8px;">
+        <h2 class="panel-title">Campo de visión (FOV)</h2>
+        <div style="display: flex; gap: 6px; margin-top: 10px;">
+          <button class="btn-secondary fov-btn" data-fov="2.0" style="flex: 1;">2′</button>
+          <button class="btn-secondary fov-btn active" data-fov="5.0" style="flex: 1;">5′</button>
+          <button class="btn-secondary fov-btn" data-fov="10.0" style="flex: 1;">10′</button>
+        </div>
+      </div>
+
+      <!-- How to Read This Educational Card -->
+      <div style="padding: 14px; background: var(--bg-base); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-top: 4px;">
+        <h3 style="font-size: 13px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">¿Cómo interpretar esto?</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+          Las estrellas lejanas permanecen fijas entre épocas. Cualquier objeto que salte de posición está desplazándose por el espacio cercano. Así fue como Clyde Tombaugh descubrió Plutón en 1930 comparando dos placas fotográficas.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Column 2: Central Astronomical Viewer -->
+    <section class="viewer-column">
+      
+      <!-- Canvas Container -->
+      <div class="canvas-container">
+        <canvas id="skyCanvas"></canvas>
+
+        <!-- Top Left HUD -->
+        <div class="canvas-hud-top-left">
+          <div id="hudFrameTitle" class="hud-frame-title">Fotograma 1 de 8</div>
+          <div id="hudFrameDesc" class="hud-frame-desc">Mapeo SPHEREx Época 1 (2026-03-15)</div>
+        </div>
+
+        <!-- Top Right HUD -->
+        <div class="canvas-hud-top-right">
+          <span id="hudTargetName" class="hud-badge">WISE 0855</span>
+          <span id="hudModeName" class="hud-badge cyan">Blink</span>
+        </div>
+
+        <!-- Scale & Compass HUD -->
+        <div class="scale-indicator">
+          <div class="scale-bar"></div>
+          <span class="scale-text">1 arcminuto</span>
+        </div>
+        <div class="compass-indicator">
+          <span>N ↑  E ←</span>
+        </div>
+      </div>
+
+      <!-- Astronomical Video Player Bar -->
+      <div class="player-toolbar">
+        <button id="btnPlay" class="btn-play" title="Reproducir / Pausar (Barra espaciadora)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="3" y="2" width="4" height="14" fill="#0F1219"></rect><rect x="11" y="2" width="4" height="14" fill="#0F1219"></rect></svg>
+        </button>
+
+        <button id="btnPrevFrame" class="btn-step" title="Fotograma anterior (←)">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2 L4 8 L11 14 Z"/></svg>
+        </button>
+
+        <!-- 8-Epoch Scrubber -->
+        <div id="playerScrubber" class="frame-scrubber">
+          <button class="frame-pill active" data-epoch="1">
+            <span>1</span>
+            <span class="frame-pill-date">03/26</span>
+          </button>
+          <button class="frame-pill" data-epoch="2">
+            <span>2</span>
+            <span class="frame-pill-date">09/26</span>
+          </button>
+          <button class="frame-pill" data-epoch="3">
+            <span>3</span>
+            <span class="frame-pill-date">03/27</span>
+          </button>
+          <button class="frame-pill" data-epoch="4">
+            <span>4</span>
+            <span class="frame-pill-date">09/27</span>
+          </button>
+          <button class="frame-pill" data-epoch="5">
+            <span>5</span>
+            <span class="frame-pill-date">03/28</span>
+          </button>
+          <button class="frame-pill" data-epoch="6">
+            <span>6</span>
+            <span class="frame-pill-date">09/28</span>
+          </button>
+          <button class="frame-pill" data-epoch="7">
+            <span>7</span>
+            <span class="frame-pill-date">03/29</span>
+          </button>
+          <button class="frame-pill" data-epoch="8">
+            <span>8</span>
+            <span class="frame-pill-date">09/29</span>
+          </button>
+        </div>
+
+        <button id="btnNextFrame" class="btn-step" title="Fotograma siguiente (→)">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2 L12 8 L5 14 Z"/></svg>
+        </button>
+
+        <select id="playbackSpeed" class="speed-select" title="Velocidad de reproducción">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+        </select>
+      </div>
+
+      <!-- Viewer Overlays & Layer Toggles -->
+      <div class="viewer-toggles">
+        <div class="toggle-group">
+          <button id="toggleReticle" class="toggle-btn active" title="Retícula astronómica">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>
+            Retícula
+          </button>
+
+          <button id="toggleGaia" class="toggle-btn active" title="Vectores de movimiento propio Gaia DR3">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M1 8 L11 8 M8 4 L12 8 L8 12" stroke="currentColor" fill="none" stroke-width="2"/></svg>
+            Gaia DR3
+          </button>
+
+          <button id="btnResetZoom" class="toggle-btn" title="Reiniciar Zoom y Enfoque">
+            Centrar (1×)
+          </button>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-faint);">
+          Rueda de ratón: <strong class="text-rose">Zoom</strong> | Arrastrar: <strong class="text-rose">Mover</strong>
+        </div>
+      </div>
+
+      <!-- Target Summary Description -->
+      <div style="padding: 14px 18px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+        <h4 style="font-size: 13px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px;">Contexto Científico</h4>
+        <p id="targetDescription" style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+          El objeto de movimiento rápido más frío jamás descubierto fuera del Sistema Solar. A 7.5 años luz, muestra nubes de vapor de agua y metano.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- Column 3: Analysis Tools, 102-Band Spectrum & Metadata -->
+    <aside class="analysis-column">
+
+      <!-- SPHEREx 6 Detectors Selection -->
+      <div class="panel-card">
+        <div>
+          <h2 class="panel-title">Arreglo de 6 detectores SPHEREx</h2>
+          <p style="font-size: 12px; color: var(--text-faint); margin-top: 2px;">Filtros variables lineales (0.75 a 5.0 µm):</p>
+        </div>
+
+        <div class="detector-buttons">
+          <button class="det-btn active" data-det="1" title="0.75 - 1.11 µm">D1</button>
+          <button class="det-btn" data-det="2" title="1.11 - 1.64 µm">D2</button>
+          <button class="det-btn" data-det="3" title="1.64 - 2.42 µm">D3</button>
+          <button class="det-btn" data-det="4" title="2.42 - 3.82 µm">D4</button>
+          <button class="det-btn" data-det="5" title="3.82 - 4.42 µm">D5</button>
+          <button class="det-btn" data-det="6" title="4.42 - 5.00 µm">D6</button>
+        </div>
+
+        <button id="btnStackAllDetectors" class="btn-stack-detectors" title="Suma los 6 detectores para reducir el ruido por un factor de ~2.45x">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v1A1.5 1.5 0 0 1 13.5 6h-11A1.5 1.5 0 0 1 1 4.5v-1zm0 5A1.5 1.5 0 0 1 2.5 7h11A1.5 1.5 0 0 1 15 8.5v1A1.5 1.5 0 0 1 13.5 11h-11A1.5 1.5 0 0 1 1 9.5v-1zm0 5A1.5 1.5 0 0 1 2.5 12h11a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 14.5v-1z"/></svg>
+          Combinar 6 detectores (+S/N)
+        </button>
+      </div>
+
+      <!-- Analysis Tabs -->
+      <div class="panel-card">
+        <div class="tab-headers">
+          <button class="tab-btn active" data-tab="tabSpectrum">Espectro (102)</button>
+          <button class="tab-btn" data-tab="tabLightcurve">Curva de Luz</button>
+          <button class="tab-btn" data-tab="tabCandidates">Candidatos</button>
+          <button class="tab-btn" data-tab="tabAladin">Aladin Lite</button>
+        </div>
+
+        <!-- Tab 1: On-the-fly Spectrum -->
+        <div id="tabSpectrum" class="tab-content active">
+          <div class="chart-container">
+            <canvas id="spectrumCanvas"></canvas>
+          </div>
+          <div class="features-list">
+            <div class="feature-pill">
+              <span style="color: #FFFFFF; font-weight: 600;">Metano (CH₄) & Vapor (H₂O)</span>
+              <span class="text-rose">1.4 – 3.3 µm</span>
+            </div>
+            <p style="font-size: 11px; color: var(--text-faint); margin: 0;">Pasa el ratón sobre el gráfico para inspeccionar flujo y detector por banda.</p>
+          </div>
+        </div>
+
+        <!-- Tab 2: Photometric Light Curve -->
+        <div id="tabLightcurve" class="tab-content">
+          <div class="chart-container">
+            <canvas id="lightcurveCanvas"></canvas>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted);">
+            Variabilidad fotométrica en las 8 épocas de SPHEREx (RW Aurigae y R Draconis).
+          </p>
+        </div>
+
+        <!-- Tab 3: Assisted Detection & Citizen Science -->
+        <div id="tabCandidates" class="tab-content">
+          <div id="candidatesList" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Rendered by JS -->
+          </div>
+          <button id="btnExportCandidate" class="btn-primary" style="width: 100%; margin-top: 6px;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+            Exportar reporte de descubrimiento
+          </button>
+        </div>
+
+        <!-- Tab 4: Aladin Lite CDS Context -->
+        <div id="tabAladin" class="tab-content">
+          <div id="aladinLiteContainer" style="width: 100%; height: 220px; border-radius: var(--radius-md); overflow: hidden; background: #000;"></div>
+          <p style="font-size: 11px; color: var(--text-faint);">Capa óptica DSS / 2MASS cortesía del CDS Estrasburgo.</p>
+        </div>
+      </div>
+
+      <!-- View & Provenance Metadata -->
+      <div class="panel-card">
+        <h2 class="panel-title">Metadatos de observación</h2>
+        <dl class="meta-grid">
+          <dt>Misión</dt><dd>NASA SPHEREx / Caltech IPAC</dd>
+          <dt>Tipo</dt><dd id="metaType">Enana Marrón Sub-estelar</dd>
+          <dt>Épocas</dt><dd>8 mapeos semestrales (4 años)</dd>
+          <dt>Bandas</dt><dd>102 canales espectrales (0.75 – 5.0 µm)</dd>
+          <dt>Banderas</dt><dd><span style="color: var(--accent-green);">● Sin contaminación</span></dd>
+        </dl>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Guided 30-Second Tour Modal -->
+  <div id="tourModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">¿Cómo descubrir objetos con Drift?</h3>
+        <button id="btnCloseTour" class="modal-close">&times;</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; font-size: 14px; line-height: 1.6; color: var(--text-muted);">
+        <p>
+          <strong class="text-rose">1. El Principio del Parpadeo:</strong> SPHEREx mapea todo el cielo cada 6 meses. Las estrellas lejanas no cambian de posición, pero los asteroides, cometas y enanas marrones saltan visiblemente entre fotogramas.
+        </p>
+        <p>
+          <strong class="text-cyan">2. Modo Diferencia:</strong> Si activas el modo <em>Diferencia</em>, restamos la primera época. Todo lo estático desaparece en gris neutro y los objetos en movimiento brillan intensamente.
+        </p>
+        <p>
+          <strong class="text-rose">3. Espectroscopía de 102 Bandas:</strong> Al seleccionar cualquier punto, el espectrómetro analiza las 102 bandas de SPHEREx (0.75 a 5.0 µm) para revelar hielo, agua o metano.
+        </p>
+        <p>
+          <strong>4. Ciencia Ciudadana:</strong> Puedes ingresar cualquier coordenada o usar los botones de prueba evaluados por el jurado (WISE 0855, Barnard, RW Aurigae).
+        </p>
+      </div>
+
+      <button onclick="document.getElementById('tourModal').classList.remove('open')" class="btn-primary" style="align-self: flex-end; margin-top: 8px;">
+        Entendido, comenzar a explorar
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="./js/coords.js"></script>
+  <script src="./js/spectrum_chart.js"></script>
+  <script src="./js/lightcurve_chart.js"></script>
+  <script src="./js/canvas_viewer.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
+
