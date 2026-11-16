@@ -265,3 +265,13 @@ body.embed .app-header, body.embed .controls-column, body.embed .analysis-column
 body.embed .context-card, body.embed .viewer-toggles .hint-inline { display: none; }
 body.embed .app-main { grid-template-columns: 1fr; padding: 8px; }
 body.embed .canvas-container { max-height: calc(100vh - 140px); }
+
+/* Clasificación «¿Qué es?» */
+.classify-box { margin-top: 12px; padding: 12px; border: 1px solid var(--border, #2A3042); border-radius: 10px; background: var(--surface-2, transparent); }
+.classify-box header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.classify-box .sub { margin: 0; }
+.classify-box .limits { margin: 8px 0; }
+.prob-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px 40px; gap: 8px; align-items: center; font-size: 12px; margin: 4px 0; }
+.prob-bar { height: 8px; border-radius: 4px; background: var(--chart-grid, #2A3042); overflow: hidden; }
+.prob-bar i { display: block; height: 100%; background: var(--accent, #FF5C93); }
+.btn-small { font-size: 12px; padding: 4px 10px; margin-top: 6px; }

@@ -415,3 +415,56 @@ def catalog_overlay(ra: float, dec: float, fov_arcmin: float, source: str) -> Di
     if source == "wise":
         return allwise(ra, dec, radius)
     return gaia_dr3(ra, dec, radius)
+
+
+def build_classification(ra: float, dec: float, target_id: Optional[str] = None, pm_arcsec_yr: Optional[float] = None,
+                         var_mag: Optional[float] = None, epoch: Optional[int] = None, refresh: bool = False,
+                         job: Optional[str] = None, spectrum: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """¿Qué tipo de objeto es? Catálogo → espectro → contexto (ver classify.py)."""
+    from .classify import classify_spectrum, combine, simbad_near, LABELS
+    spec = spectrum or build_spectrum(ra, dec, target_id, epoch, refresh, job)
+    t = find_target(target_id) if target_id else None
+    spectral = classify_spectrum(spec.get("points") or [])
+
+    mjd = (spec.get("epoch") or {}).get("mjd_mean") or 61000.0
+    year = _year(mjd)
+    catalog, simbad, pm_source = None, None, None
+    if t:
+        catalog = {"name": t["name"], "kind": t["kind"], "category": t.get("category"),
+                   "source": "ficha de SIMBAD guardada en Drift"}
+        if pm_arcsec_yr is None:
+            pm_arcsec_yr, pm_source = float(np.hypot(t["pmra"], t["pmdec"]) / 1000), "SIMBAD"
+    else:
+        simbad = simbad_near(ra, dec, year)
+        m = simbad.get("match") if simbad.get("available") else None
+        if m:
+            kind = (m.get("description") or m["otype"]) + (f", tipo espectral {m['sp_type']}" if m.get("sp_type") else "")
+            if m.get("category"):
+                catalog = {"name": m["main_id"], "kind": kind, "category": m["category"],
+                           "source": f"SIMBAD, a {m['sep_arcsec']}″"}
+            if pm_arcsec_yr is None and m.get("pm_arcsec_yr") is not None:
+                pm_arcsec_yr, pm_source = m["pm_arcsec_yr"], "SIMBAD"
+    if pm_arcsec_yr is not None and pm_source is None:
+        pm_source = "medido por Drift"
+
+    if var_mag is None:  # curva de luz ya calculada para este punto (solo caché)
+        lc = _load_cached(json.dumps(["lc-v4", round(ra, 5), round(dec, 5), target_id, 4, config.SPHEREX_COLLECTIONS]), False)
+        if lc and lc.get("points"):
+            good = [abs(p["delta_mag"]) for p in lc["points"] if abs(p["delta_mag"]) > 3 * p["err_mag"]]
+            var_mag = max(good) if good else max(0.0, *[abs(p["delta_mag"]) for p in lc["points"]])
+
+    final = combine(spectral, catalog, pm_arcsec_yr, pm_source, var_mag, ra, dec)
+    if simbad is not None and not simbad.get("available"):
+        final["reasons"].append(simbad.get("error", "SIMBAD no respondió") + ": no se pudo consultar el catálogo.")
+    elif simbad is not None and not catalog:
+        m = simbad.get("match")
+        final["reasons"].append(f"SIMBAD: «{m['main_id']}» a {m['sep_arcsec']}″ es de tipo «{m.get('description') or m['otype']}», "
+                                "que no indica una clase concreta." if m else
+                                "SIMBAD: no hay ningún objeto catalogado a menos de 9″. Si el espectro es raro, ¡vale la pena revisarlo!")
+    return {"status": "ok", "position": {"ra_deg": ra, "dec_deg": dec}, "target": t,
+            "spectral": spectral, "catalog": catalog,
+            "simbad": simbad, "context": {"pm_arcsec_yr": pm_arcsec_yr, "pm_source": pm_source, "var_mag": var_mag},
+            "final": final, "labels": LABELS,
+            "spectrum_epoch": spec.get("epoch"),
+            "note": "Sugerencia automática para revisión humana. Las plantillas son aproximaciones físicas, "
+                    "no un modelo entrenado: los porcentajes indican qué plantilla ajusta mejor, no probabilidades calibradas."}

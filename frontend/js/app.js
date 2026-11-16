@@ -317,10 +317,12 @@ class App {
     // análisis automáticos del objeto central (desde caché si existe)
     const t = this.targets.find((x) => x.id === this.state.target);
     this.spec.setMessage('Haz clic en una fuente de la imagen\no usa «Espectro del objeto central».');
+    $('classifyBox').hidden = true;
     this.lc.setMessage(t && t.behavior === 'variable' ? 'Pulsa «Medir brillo» para ver si cambió.' : 'Pulsa «Medir brillo del objeto central».');
     if (this.offline && this.demo[this.state.target]) {
       const b = this.demo[this.state.target];
       if (b.spectrum) this.showSpectrum(b.spectrum);
+      if (b.classification) this.showClassification(b.classification);
       if (b.lightcurve) this.showLightcurve(b.lightcurve);
     }
     if (this.aladin) this.aladin.gotoRaDec(v.center.ra_deg, v.center.dec_deg);
@@ -413,8 +415,9 @@ class App {
 
   spectrumCenter() { const t = this.state.target, s = this.state; this.spectrumAt(s.ra, s.dec, t); }
 
-  async spectrumAt(ra, dec, target) {
+  async spectrumAt(ra, dec, target, extra = {}) {
     this.openTab('tabSpectrum');
+    $('classifyBox').hidden = true;
     if (this.offline) { $('specStatus').textContent = 'Sin servidor solo está el espectro guardado del objeto central.'; return; }
     $('specStatus').textContent = `Midiendo en RA ${ra.toFixed(4)}°, Dec ${dec.toFixed(4)}°…`;
     this.spec.setMessage('Leyendo ~100 fotos de SPHEREx (una por color)…\nla primera vez tarda hasta un minuto.');
@@ -423,8 +426,31 @@ class App {
     try {
       const r = await this.api('spectrum', { ra, dec, target }, { job });
       this.showSpectrum(r);
+      if (r.status === 'ok') this.classifyAt(ra, dec, target, extra);
     } catch (e) { this.spec.setMessage(e.message); $('specStatus').textContent = ''; }
     finally { clearInterval(poll); }
+  }
+
+  async classifyAt(ra, dec, target, extra = {}) {
+    const box = $('classifyBox'); box.hidden = false;
+    box.innerHTML = '<p class="hint">Clasificando: catálogo SIMBAD, plantillas del espectro y contexto…</p>';
+    try { this.showClassification(await this.api('classify', { ra, dec, target, pm: extra.pm })); }
+    catch (e) { box.innerHTML = `<p class="hint">No se pudo clasificar: ${esc(e.message)}</p>`; }
+  }
+
+  showClassification(c) {
+    const box = $('classifyBox'); if (!c) { box.hidden = true; return; }
+    box.hidden = false;
+    const f = c.final, sp = c.spectral || {}, L = c.labels || {};
+    this.spec.setModel(sp.available ? sp.model_curve : null, sp.available ? sp.background_curve : null, sp.available ? `Plantilla: ${L[sp.top] || ''} (${sp.template})` : '');
+    const bars = Object.entries(f.probabilities).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+      `<div class="prob-row"><span>${esc(L[k] || k)}</span><span class="prob-bar"><i style="width:${Math.round(v * 100)}%"></i></span><span class="mono">${Math.round(v * 100)}%</span></div>`).join('');
+    box.innerHTML = `
+      <header><h3 class="sub">¿Qué es?</h3> <span class="pill ${f.confidence === 'alta' ? 'alta' : f.confidence === 'media' ? 'media' : 'baja'}">confianza ${esc(f.confidence)} · ${esc(f.method)}</span></header>
+      <p class="cand-label">${esc(f.verdict)}</p>
+      <ul class="limits">${f.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+      <details><summary>Probabilidades por clase (espectro + contexto)</summary>${bars}</details>
+      <p class="hint">${esc(c.note)}</p>`;
   }
 
   showSpectrum(r) {
@@ -471,6 +497,7 @@ class App {
           ${c.known_match ? `<dt>Gaia DR3</dt><dd>${esc(c.known_match.id)} a ${c.known_match.sep_arcsec}″ (μ ${c.known_match.gaia_motion_arcsec_yr}″/año)</dd>` : ''}
         </dl>
         <p class="hint">${esc(c.status)}</p>
+        <button class="btn-secondary btn-small" type="button" data-classify="${i}">¿Qué es? (espectro y clasificación)</button>
       </article>`).join('');
     if (t && t.behavior === 'moving') {
       const exp = (Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(2);
@@ -480,6 +507,10 @@ class App {
     if (det.solar_system) html += `<p class="hint">Cotejo con asteroides/cometas: ${esc(det.solar_system.service)}, automático y aproximado${det.solar_system.epochs_failed ? ` (${det.solar_system.epochs_failed} fecha(s) sin respuesta: marcadas "sin cotejar")` : ''}. Los candidatos siguen siendo para revisión humana.</p>`;
     html += `<p class="hint">Método: ${esc(det.method || '')}</p>`;
     el.innerHTML = html;
+    el.querySelectorAll('[data-classify]').forEach((b) => b.addEventListener('click', () => {
+      const c = cands[+b.dataset.classify];
+      this.spectrumAt(c.ra_deg, c.dec_deg, null, { pm: c.motion_arcsec_yr });
+    }));
   }
 
   renderMeta() {
