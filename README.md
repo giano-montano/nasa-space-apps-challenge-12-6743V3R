@@ -17,6 +17,7 @@ No sign-up, no install, works on your phone. Click any of the 5 challenge target
 - **Pluto was found by blinking two photos.** Drift gives you that same trick, with SPHEREx, in your browser: blink, swipe, difference or stack the epochs and the movers pop out.
 - **Real data, not a mock-up.** Every image comes from NASA/IPAC IRSA at query time. The only simulated thing is the sensitivity test, and it says so on screen.
 - **From "something moved" to "what is it?" in one place.** Candidates are tracked across dates, checked against Gaia DR3 and matched to known asteroids and comets (JPL Small-Body Identification), then exported as JSON/CSV for a human to review.
+- **An AI copilot that explains what you are looking at.** Ask in plain language ("why does this dot look different on the second date?", "is this candidate a known asteroid?") and the **Copiloto** answers using the current view: mode, candidates, light curve, spectrum and catalogs. It is told not to invent numbers and to call every detection a *preliminary candidate for human review*, never a discovery. It needs a `GROQ_API_KEY` on the server, so it is **off in the hosted demo** and available when you run Drift yourself.
 - **Honest by design.** It tells you its limits (6.2″ pixels, ~3 dates per place today) and shows how many fake movers it can recover. It gets better by itself as SPHEREx keeps observing, with no code changes.
 - **Made to be shared.** Every view has a URL (`?ra=&dec=&fov=&mode=`) and an `<iframe>` embed code.
 
