@@ -142,3 +142,34 @@ def test_dipole_finds_blended_mover():
     b = star + g(24.6, 24, 0.5) + rng.normal(0, 0.02, (n, n))
     dps = D.find_dipoles(P.difference(b, a))
     assert any(abs(d["neg"][0] - 23) <= 1 and abs(d["pos"][0] - 25) <= 1 for d in dps)
+
+
+# --- Cotejo con cuerpos del Sistema Solar (JPL), con respuesta simulada ---------------
+
+def test_solar_system_match_and_fallback(monkeypatch):
+    from backend.app import solar_system as S
+    bodies = [{"name": "433 Eros (A898 PA)", "ra_deg": 180.0, "dec_deg": 10.0, "vmag": 12.0,
+               "ra_rate_arcsec_h": 30.0, "dec_rate_arcsec_h": 5.0}]
+    # coincide dentro de la tolerancia, no fuera
+    assert S.match_body(180.0005, 10.0, bodies, 12.4)["name"].startswith("433 Eros")
+    assert S.match_body(180.1, 10.0, bodies, 12.4) is None
+
+    items = lambda: [{"ra_deg": 180.0, "dec_deg": 10.0, "epochs": [0], "positions_by_epoch": {0: (180.0, 10.0)}}]
+    monkeypatch.setattr(S, "known_bodies", lambda *a, **k: bodies)
+    it = items()
+    S.crossmatch_solar_system(it, {0: 60000.0}, 180.0, 10.0, 0.05, 12.4)
+    assert it[0]["ss_match"]["name"].startswith("433 Eros") and it[0]["ss_checked"]
+
+    # JPL caído: "sin cotejar", nunca "sin coincidencia"
+    monkeypatch.setattr(S, "known_bodies", lambda *a, **k: None)
+    it = items()
+    S.crossmatch_solar_system(it, {0: 60000.0}, 180.0, 10.0, 0.05, 12.4)
+    assert it[0]["ss_match"] is None and it[0]["ss_checked"] is False
+
+
+def test_solar_system_sexagesimal_helpers():
+    from backend.app import solar_system as S
+    assert S._sexa_ra(180.0) == "12-00-00.00"
+    assert S._sexa_dec(-7.5) == "-07-30-00.00"
+    assert abs(S._parse_ra("12:00:30.0") - 180.125) < 1e-9
+    assert abs(S._parse_dec("-07 30'00.0\"") + 7.5) < 1e-9

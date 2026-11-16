@@ -33,7 +33,7 @@ LIMITATIONS = [
     "SPHEREx observa cada punto unas pocas veces por año desde 2025: hay pocas épocas.",
     "Cada exposición mide un color distinto (filtros lineales variables); se comparan solo colores equivalentes.",
     "Los candidatos son sugerencias automáticas para revisión humana, no descubrimientos.",
-    "No se cotejan asteroides y cometas conocidos automáticamente.",
+    "El cotejo con asteroides y cometas conocidos (JPL) es automático y aproximado (observador geocéntrico); si JPL no responde, el candidato queda \"sin cotejar\".",
 ]
 
 # ---------------------------------------------------------------------------
@@ -263,7 +263,7 @@ def build_view(ra: float, dec: float, target_id: Optional[str] = None, fov_arcmi
     epoch_mjd = {e["index"]: e["mjd_mean"] for e in used}
     flat = {k: {"data": flatten(coadds[k]["data"]), "err": coadds[k]["err"]} for k in epoch_mjd}
     det = detect_candidates(flat, epoch_mjd, grid,
-                            gaia_sources=gaia["sources"] if gaia else None) if len(used) >= 2 else \
+                            gaia_sources=gaia["sources"] if gaia else None, solar_system=True) if len(used) >= 2 else \
         {"candidates": [], "transients": [], "method": "Hace falta más de una época para medir movimiento."}
 
     ra_s, dec_s = deg_to_sexagesimal(cra, cdec)

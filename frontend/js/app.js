@@ -477,6 +477,7 @@ class App {
       html += `<p class="hint">Referencia: ${esc(t.name)} se mueve ${exp}″/año según SIMBAD (${esc(t.ref)}). Su trayectoria esperada está en rosa.</p>`;
     }
     if (tr.length) html += `<h3 class="sub">Aparecen en una sola fecha (${tr.length})</h3><ul class="limits">${tr.map((x) => `<li>Época ${x.epoch}: ${x.ra_deg.toFixed(5)}°, ${x.dec_deg.toFixed(5)}° (S/R ${x.snr}) — ${esc(x.status)}</li>`).join('')}</ul>`;
+    if (det.solar_system) html += `<p class="hint">Cotejo con asteroides/cometas: ${esc(det.solar_system.service)}, automático y aproximado${det.solar_system.epochs_failed ? ` (${det.solar_system.epochs_failed} fecha(s) sin respuesta: marcadas "sin cotejar")` : ''}. Los candidatos siguen siendo para revisión humana.</p>`;
     html += `<p class="hint">Método: ${esc(det.method || '')}</p>`;
     el.innerHTML = html;
   }

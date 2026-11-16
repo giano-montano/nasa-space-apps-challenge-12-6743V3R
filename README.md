@@ -56,6 +56,7 @@ En Windows también puedes hacer doble clic en `start.bat`.
 - Detecta fuentes en cada fecha, las enlaza entre fechas y ajusta un movimiento lineal con su incertidumbre.
 - Marca como candidato lo que se mueve ≥ 0,5 px y ≥ 5σ. Lo coteja con Gaia DR3 en la misma fecha: "conocido", "probable falso movimiento" o "no catalogado, revisar".
 - Lista aparte las fuentes que aparecen en **una sola fecha** (posibles asteroides o artefactos).
+- Cada candidato y fuente de una sola fecha se coteja con **JPL Small-Body Identification** (asteroides y cometas predichos en esa fecha): "coincide con cuerpo conocido: NOMBRE".
 - **Prueba de honestidad:** inyecta objetos simulados con distintos brillos y velocidades sobre las imágenes reales y muestra qué fracción se recupera.
 - Exporta los candidatos a JSON o CSV, y una captura a PNG.
 
@@ -101,7 +102,7 @@ Cubren el conversor de coordenadas, la propagación del movimiento propio, la ag
 ## Limitaciones (honestas)
 - Píxeles de 6,2″: solo se ven movimientos de ≳1″/año en fuentes brillantes, y dos fuentes a menos de ~10″ se confunden. Epsilon Indi B se ve como un solo punto.
 - SPHEREx observa cada punto pocas veces por año desde mayo de 2025: hoy hay ~3 fechas por lugar. Con los años la herramienta mejora sola.
-- Los candidatos son sugerencias automáticas, no descubrimientos. No se cotejan asteroides conocidos de forma automática.
+- Los candidatos son sugerencias automáticas, no descubrimientos. El cotejo con asteroides y cometas conocidos (JPL `sb_ident`, observador geocéntrico) es automático y aproximado; si JPL no responde, el candidato queda "sin cotejar".
 - La primera consulta de un lugar depende de la velocidad de IRSA y AWS.
 
 ## Créditos

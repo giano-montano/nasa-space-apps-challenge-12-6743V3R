@@ -12,9 +12,9 @@ Siempre son CANDIDATOS PARA REVISIÓN HUMANA, nunca descubrimientos.
 
 Limitaciones: píxeles de 6,2″ y pocas épocas (~6 meses entre visitas): solo
 movimientos de ≳ 1″/año en fuentes brillantes. Campos densos generan
-confusiones. No se cotejan cuerpos del Sistema Solar (SPHEREx no tiene código
-de observatorio MPC público); un objeto que aparece en una sola época se
-reporta como "transitorio" para revisar.
+confusiones. Los cuerpos del Sistema Solar se cotejan con JPL sb_ident desde
+un observador geocéntrico (aproximado: SPHEREx no tiene código MPC propio);
+un objeto que aparece en una sola época se reporta como "transitorio".
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from scipy import ndimage
 from . import config
 from .catalogs import gaia_position_at
 from .processing import robust_sigma
+from .solar_system import crossmatch_solar_system
 
 YEAR = 365.25
 
@@ -124,7 +125,8 @@ def _wfit2(t, x, y, w):
 def detect_candidates(coadds: Dict[int, Dict[str, np.ndarray]], epoch_mjd: Dict[int, float], grid: WCS,
                       gaia_sources: Optional[List[Dict[str, Any]]] = None, nsigma: float = 5.0,
                       min_sig: float = 5.0, min_motion_px: float = 0.5,
-                      center_target: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                      center_target: Optional[Dict[str, Any]] = None,
+                      solar_system: bool = False) -> Dict[str, Any]:
     srcs = {e: find_sources(c["data"], c.get("err"), nsigma) for e, c in coadds.items()}
     fits_ = link_and_fit(srcs, epoch_mjd)
     cands = []
@@ -228,11 +230,53 @@ def detect_candidates(coadds: Dict[int, Dict[str, np.ndarray]], epoch_mjd: Dict[
             cand["quality"] = q
             cands.append(cand)
 
+    transients = transients[:20]
+    ss_info = _solar_system_check(cands, transients, coadds, epoch_mjd, grid) if solar_system else None
     cands.sort(key=lambda c: (-c["quality"]["score"]))
-    return {"candidates": cands, "transients": transients[:20],
+    return {"candidates": cands, "transients": transients, "solar_system": ss_info,
             "n_sources": {int(e): len(v) for e, v in srcs.items()},
             "method": "Picos > {}σ por época, enlace ≤3 px, ajuste lineal; candidato si movimiento ≥{} px y ≥{}σ."
                       .format(nsigma, min_motion_px, min_sig)}
+
+
+def _solar_system_check(cands, transients, coadds, epoch_mjd, grid) -> Dict[str, Any]:
+    """Cotejo con asteroides/cometas conocidos (JPL). Nunca dice "no hay" si JPL no respondió."""
+    n = next(iter(coadds.values()))["data"].shape[0]
+    cen = grid.pixel_to_world((n - 1) / 2.0, (n - 1) / 2.0)
+    radius = n * config.PIXEL_SCALE_ARCSEC / 3600.0 / 2.0 * 1.45 + 0.01
+    tol = 2.0 * config.PIXEL_SCALE_ARCSEC
+    items = []
+    for c in cands:
+        by_ep = {}
+        for p in c["positions"]:
+            w = grid.pixel_to_world(p["x"], p["y"])
+            by_ep[p["epoch"]] = (float(w.ra.deg), float(w.dec.deg))
+        items.append({"ref": c, "ra_deg": c["ra_deg"], "dec_deg": c["dec_deg"],
+                      "epochs": list(by_ep), "positions_by_epoch": by_ep})
+    for t in transients:
+        items.append({"ref": t, "ra_deg": t["ra_deg"], "dec_deg": t["dec_deg"],
+                      "epochs": [t["epoch"]], "positions_by_epoch": {t["epoch"]: (t["ra_deg"], t["dec_deg"])}})
+    info = crossmatch_solar_system(items, epoch_mjd, float(cen.ra.deg), float(cen.dec.deg), radius, tol)
+    for it in items:
+        o = it["ref"]
+        o["ss_match"], o["ss_checked"] = it["ss_match"], it["ss_checked"]
+        m = it["ss_match"]
+        if "quality" in o:
+            q = o["quality"]
+            if m:
+                q["label"] = f"Coincide con cuerpo conocido del Sistema Solar: {m['name']}"
+                q["score"] = round(q["score"] * 0.4, 2)
+                q["level"] = "alta" if q["score"] > 0.7 else "media" if q["score"] > 0.45 else "baja"
+            elif not it["ss_checked"]:
+                q["label"] += " · Sistema Solar: sin cotejar (JPL no respondió)"
+        else:
+            if m:
+                o["status"] = f"Coincide con cuerpo conocido del Sistema Solar: {m['name']} (cotejo automático y aproximado)."
+            elif not it["ss_checked"]:
+                o["status"] += " Sin cotejar con JPL (no respondió)."
+            else:
+                o["status"] += " Sin coincidencia en JPL: revisar."
+    return info
 
 
 def find_dipoles(diff: np.ndarray, nsigma: float = 3.5, min_sep: float = 0.7, max_sep: float = 4.0,
