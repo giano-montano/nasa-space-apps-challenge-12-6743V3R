@@ -5,7 +5,7 @@ __pycache__/
 
 # Caches and runtime data
 .pytest_cache/
-backend/app/data_cache/*.json
+backend/app/data_cache/*
 !backend/app/data_cache/.gitkeep
 
 # Environment & OS

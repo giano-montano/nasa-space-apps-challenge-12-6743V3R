@@ -1,140 +1,165 @@
 """
-FastAPI Server for SPHEREx Sky Viewer.
-Serves astronomical endpoints and mounts the improved frontend.
+API de Drift — SPHEREx Sky Viewer (datos reales de NASA/IPAC IRSA).
 """
 
 import os
-from fastapi import FastAPI, Query, HTTPException
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .coords import parse_coordinates, deg_to_sexagesimal
-from .irsa_client import fetch_spherex_data, clear_cache
-from .astronomical_data import TARGET_CATALOG, find_nearest_target, generate_synthetic_spectrum, generate_lightcurve
-from .gaia_client import get_gaia_dr3_sources
+from . import config
+from .catalogs import CatalogUnavailable
+from .coords import deg_to_sexagesimal, parse_coordinates
+from .irsa_client import IrsaUnavailable, clear_cache
+from .targets import public_targets, resolve_name
+from . import viewer
 
 app = FastAPI(
     title="Drift — SPHEREx Sky Viewer API",
-    description="NASA Space Apps Challenge 2026: Multi-epoch infrared sky viewer for fast-moving and variable object detection",
-    version="2.0.0"
+    description="Visor público de imágenes reales de SPHEREx en el tiempo (NASA Space Apps 2026, reto Planet X and SPHEREx).",
+    version="3.0.0",
 )
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=2000)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+def _coords(ra: str, dec: str):
+    try:
+        return parse_coordinates(ra, dec)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+def _dets(detectors: str):
+    if detectors in ("all", "*"):
+        return list(range(1, 7))
+    try:
+        d = sorted({int(x) for x in detectors.split(",") if x.strip()})
+    except ValueError:
+        raise HTTPException(422, "detectors debe ser una lista como 1,2 o 'all'.")
+    if not d or any(x < 1 or x > 6 for x in d):
+        raise HTTPException(422, "Los detectores van del 1 al 6.")
+    return d
+
+
+def _guard(fn, *a, **kw):
+    try:
+        return fn(*a, **kw)
+    except IrsaUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"IRSA (NASA) no responde ahora: {e}. Prueba de nuevo en unos minutos.")
+    except CatalogUnavailable as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "collections": config.SPHEREX_COLLECTIONS}
 
 
 @app.get("/api/targets")
-def get_benchmark_targets():
-    """Returns official NASA challenge benchmark test targets."""
-    return list(TARGET_CATALOG.values())
+def targets():
+    """Los cinco objetivos de prueba del reto (posiciones de SIMBAD)."""
+    return public_targets()
+
+
+@app.get("/api/resolve")
+def resolve(name: str = Query(..., min_length=1, max_length=120)):
+    """Nombre → coordenadas (SIMBAD/NED/VizieR vía Sesame)."""
+    try:
+        r = resolve_name(name)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(503, f"El servicio de nombres (CDS) no responde: {e.__class__.__name__}")
+    r["ra_sex"], r["dec_sex"] = deg_to_sexagesimal(r["ra"], r["dec"])
+    return r
+
+
+@app.get("/api/epochs")
+def epochs(ra: str, dec: str, target: Optional[str] = None, refresh: bool = False):
+    """Fechas disponibles en IRSA para un punto (rápido, solo metadatos)."""
+    r, d = _coords(ra, dec)
+    info = _guard(viewer.list_epochs, r, d, target, refresh)
+    return {k: v for k, v in info.items() if not k.startswith("_")}
 
 
 @app.get("/api/frames")
-def get_frames(
-    ra: str = Query("133.7951", description="Right Ascension (deg or sexagesimal)"),
-    dec: str = Query("-7.2451", description="Declination (deg or sexagesimal)"),
-    fov: float = Query(5.0, description="Field of View in arcminutes"),
-    mode: str = Query("blink", description="'blink', 'diff', or 'stack'"),
-    detector: int = Query(1, ge=1, le=6, description="SPHEREx Detector (1 to 6)"),
-    stack_detectors: bool = Query(False, description="Combine all 6 detectors for boosted SNR"),
-    refresh: bool = Query(False, description="Force invalidate cache and fetch fresh data")
+def frames(
+    ra: str, dec: str,
+    target: Optional[str] = None,
+    fov: float = Query(5.0, ge=1.0, le=config.MAX_FOV_ARCMIN, description="Campo de visión en minutos de arco"),
+    detectors: Optional[str] = Query(None, description="Detectores a combinar: '1', '1,2' o 'all'. Vacío = recomendado para el objetivo"),
+    match_bands: bool = Query(True, description="Comparar solo longitudes de onda equivalentes entre épocas"),
+    epochs: Optional[str] = Query(None, description="Índices de época a usar, p. ej. '0,2'"),
+    ref: Optional[int] = Query(None, description="Época de referencia para la diferencia"),
+    stretch: str = Query("asinh", pattern="^(asinh|log|sqrt|linear)$"),
+    refresh: bool = False,
+    job: Optional[str] = None,
 ):
-    """
-    Fetches multi-epoch SPHEREx observation frames for the designated sky patch.
-    """
-    try:
-        data = fetch_spherex_data(
-            ra_str=ra,
-            dec_str=dec,
-            fov_arcmin=fov,
-            mode=mode,
-            detector_id=detector,
-            stack_all_detectors=stack_detectors,
-            refresh=refresh
-        )
-        return data
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    r, d = _coords(ra, dec)
+    ep = None
+    if epochs:
+        try:
+            ep = sorted({int(x) for x in epochs.split(",") if x.strip()})
+        except ValueError:
+            raise HTTPException(422, "epochs debe ser una lista de números.")
+    res = _guard(viewer.build_view, r, d, target, fov, _dets(detectors) if detectors else None, match_bands, ep, ref, stretch, refresh, job)
+    return res
 
 
 @app.get("/api/spectrum")
-def get_spectrum(
-    ra: str = Query("133.7951"),
-    dec: str = Query("-7.2451"),
-    target_id: str = Query(None)
-):
-    """
-    Returns 102-band on-the-fly infrared spectrum (0.75 - 5.0 um).
-    """
-    if not target_id:
-        try:
-            r, d = parse_coordinates(ra, dec)
-            t = find_nearest_target(r, d)
-            target_id = t["id"] if t else "custom"
-        except Exception:
-            target_id = "custom"
-
-    return generate_synthetic_spectrum(target_id)
+def spectrum(ra: str, dec: str, target: Optional[str] = None, epoch: Optional[int] = None,
+             refresh: bool = False, job: Optional[str] = None):
+    """Espectro al vuelo (flujo vs longitud de onda) en una posición."""
+    r, d = _coords(ra, dec)
+    return _guard(viewer.build_spectrum, r, d, target, epoch, refresh, job)
 
 
 @app.get("/api/lightcurve")
-def get_lightcurve(
-    ra: str = Query("76.9562"),
-    dec: str = Query("30.4014"),
-    target_id: str = Query(None)
-):
-    """
-    Returns photometric light curve across observation epochs for variable stars.
-    """
-    if not target_id:
-        try:
-            r, d = parse_coordinates(ra, dec)
-            t = find_nearest_target(r, d)
-            target_id = t["id"] if t else "custom"
-        except Exception:
-            target_id = "custom"
-
-    return generate_lightcurve(target_id)
+def lightcurve(ra: str, dec: str, target: Optional[str] = None, refresh: bool = False, job: Optional[str] = None):
+    """Curva de luz comparando longitudes de onda equivalentes entre épocas."""
+    r, d = _coords(ra, dec)
+    return _guard(viewer.build_lightcurve, r, d, target, refresh, job)
 
 
 @app.get("/api/catalog")
-def get_catalog(
-    ra: str = Query("133.7951"),
-    dec: str = Query("-7.2451"),
-    fov: float = Query(5.0),
-    source: str = Query("gaia")
-):
-    """
-    Fetches Gaia DR3 proper motion catalog overlay.
-    """
-    try:
-        r, d = parse_coordinates(ra, dec)
-        sources = get_gaia_dr3_sources(r, d, fov_arcmin=fov)
-        return {
-            "source": "Gaia DR3",
-            "center": {"ra": r, "dec": d},
-            "fov_arcmin": fov,
-            "count": len(sources),
-            "sources": sources
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+def catalog(ra: str, dec: str, fov: float = Query(5.0, ge=1.0, le=config.MAX_FOV_ARCMIN),
+            source: str = Query("gaia", pattern="^(gaia|wise)$")):
+    """Fuentes de Gaia DR3 o AllWISE en el campo."""
+    r, d = _coords(ra, dec)
+    return _guard(viewer.catalog_overlay, r, d, fov, source)
+
+
+@app.get("/api/injection-test")
+def injection(ra: str, dec: str, target: Optional[str] = None, fov: float = 5.0, detectors: str = "1",
+              job: Optional[str] = None):
+    """Prueba de honestidad: sensibilidad del detector con objetos simulados inyectados."""
+    r, d = _coords(ra, dec)
+    return _guard(viewer.run_injection, r, d, target, fov, _dets(detectors), job)
+
+
+@app.get("/api/progress")
+def progress(job: str):
+    return viewer.get_progress(job)
 
 
 @app.post("/api/refresh")
-def refresh_cache():
-    """Invalidates the local query cache to discover new data releases."""
-    cleared = clear_cache()
-    return {"status": "ok", "message": f"Cache cleared successfully. {cleared} files removed."}
+def refresh(stamps: bool = False):
+    """Borra consultas guardadas para incorporar nuevos lanzamientos de datos de IRSA."""
+    n = clear_cache(include_stamps=stamps)
+    return {"status": "ok", "removed": n,
+            "message": f"Caché borrada ({n} archivos). La próxima consulta irá a IRSA y verá los datos nuevos."}
 
 
-# Mount the improved frontend static directory
+@app.exception_handler(Exception)
+async def unhandled(request, exc):
+    return JSONResponse(status_code=500, content={"detail": f"Error interno: {exc.__class__.__name__}: {exc}"})
+
+
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
 if os.path.exists(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
-
