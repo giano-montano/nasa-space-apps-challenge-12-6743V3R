@@ -33,7 +33,7 @@ class BaseChart {
     const txt = css.getPropertyValue('--text-muted').trim() || '#B7BDD2';
     const X = (v) => this.pad.l + (v - xr[0]) / (xr[1] - xr[0]) * f.pw;
     const Y = (v) => invertY ? this.pad.t + (v - yr[0]) / (yr[1] - yr[0]) * f.ph : this.pad.t + f.ph - (v - yr[0]) / (yr[1] - yr[0]) * f.ph;
-    c.strokeStyle = grid; c.lineWidth = 1; c.fillStyle = txt; c.font = '11px Schibsted Grotesk, sans-serif';
+    c.strokeStyle = grid; c.lineWidth = 1; c.fillStyle = txt; c.font = '11px Atkinson Hyperlegible Next, sans-serif';
     c.textAlign = 'center';
     xticks.forEach((t) => { const x = X(t.v); c.beginPath(); c.moveTo(x, this.pad.t); c.lineTo(x, this.pad.t + f.ph); c.stroke(); c.fillText(t.l, x, this.pad.t + f.ph + 15); });
     c.textAlign = 'right';
@@ -45,11 +45,11 @@ class BaseChart {
   _empty(msg) {
     const f = this._frame(), c = this.ctx;
     c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-faint').trim() || '#7D85A0';
-    c.font = '13px Schibsted Grotesk, sans-serif'; c.textAlign = 'center';
+    c.font = '13px Atkinson Hyperlegible Next, sans-serif'; c.textAlign = 'center';
     String(msg || '').split('\n').forEach((l, i) => c.fillText(l, f.w / 2, f.h / 2 + i * 18));
   }
   _tooltip(x, y, lines) {
-    const c = this.ctx; c.font = '12px Schibsted Grotesk, sans-serif';
+    const c = this.ctx; c.font = '12px Atkinson Hyperlegible Next, sans-serif';
     const w = Math.max(...lines.map((l) => c.measureText(l).width)) + 14, h = lines.length * 16 + 8;
     const d = window.devicePixelRatio || 1, W = this.canvas.width / d;
     const bx = Math.min(x + 10, W - w - 4), by = Math.max(4, y - h - 6);
@@ -104,7 +104,7 @@ class SpectrumChart extends BaseChart {
       const line = (cv, col, dash) => { c.save(); c.strokeStyle = col; c.lineWidth = 2; c.setLineDash(dash); c.beginPath(); cv.forEach(([x, y], i) => { const px = X(x), py = clampY(y); i ? c.lineTo(px, py) : c.moveTo(px, py); }); c.stroke(); c.restore(); };
       if (this.model.bg) line(this.model.bg, 'rgba(183,189,210,.55)', [3, 4]);
       line(this.model.curve, 'rgba(255,92,147,.85)', []);
-      c.save(); c.fillStyle = 'rgba(255,92,147,.95)'; c.font = '11px Schibsted Grotesk, sans-serif'; c.textAlign = 'right';
+      c.save(); c.fillStyle = 'rgba(255,106,61,.95)'; c.font = '11px Atkinson Hyperlegible Next, sans-serif'; c.textAlign = 'right';
       c.fillText(this.model.label + (this.model.bg ? ' · gris: estrella de fondo' : ''), this.pad.l + f.pw - 4, this.pad.t + f.ph - 6); c.restore();
     }
     this._pos = [];

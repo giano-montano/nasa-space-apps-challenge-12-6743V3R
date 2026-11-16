@@ -183,7 +183,7 @@ class SkyCanvasViewer {
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg') || '#05070B';
     ctx.fillRect(0, 0, w, h);
     if (!this.img || !this.grid) {
-      ctx.fillStyle = '#9AA3BD'; ctx.font = '15px Schibsted Grotesk, system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#9AA3BD'; ctx.font = '15px Atkinson Hyperlegible Next, system-ui, sans-serif'; ctx.textAlign = 'center';
       (this.message || '').split('\n').forEach((line, i) => ctx.fillText(line, w / 2, h / 2 + i * 22));
       return;
     }
@@ -198,8 +198,8 @@ class SkyCanvasViewer {
     }
     ctx.strokeStyle = 'rgba(160,170,200,.35)'; ctx.lineWidth = 1; ctx.strokeRect(ox, oy, n * s, n * s);
 
-    if (this.layers.gaia) this._drawCatalog(this.gaia, '#38D9F5', true);
-    if (this.layers.wise) this._drawCatalog(this.wise, '#FFC75F', false);
+    if (this.layers.gaia) this._drawCatalog(this.gaia, '#8DB8FF', true);
+    if (this.layers.wise) this._drawCatalog(this.wise, '#EBBE55', false);
     if (this.layers.track) this._drawTrack();
     if (this.layers.candidates) this._drawCandidates();
     if (this.layers.reticle) this._drawReticle(w, h);
@@ -235,8 +235,8 @@ class SkyCanvasViewer {
     c.stroke(); c.setLineDash([]);
     this.track.forEach((t) => {
       const p = this.gridToCanvas(t.x, t.y); const cur = t.epoch === this.currentEpoch;
-      c.fillStyle = cur ? '#FF5C93' : 'rgba(255,92,147,.45)'; c.beginPath(); c.arc(p.cx, p.cy, cur ? 3.5 : 2.2, 0, Math.PI * 2); c.fill();
-      if (cur) this._ring(p.cx, p.cy, Math.max(10, 2.2 * s), '#FF5C93');
+      c.fillStyle = cur ? '#FF6A3D' : 'rgba(255,106,61,.5)'; c.beginPath(); c.arc(p.cx, p.cy, cur ? 3.5 : 2.2, 0, Math.PI * 2); c.fill();
+      if (cur) this._ring(p.cx, p.cy, Math.max(10, 2.2 * s), '#FF6A3D');
     });
     c.restore();
   }
@@ -274,13 +274,13 @@ class SkyCanvasViewer {
     const c = this.ctx, { s } = this._fit();
     (this.candidates || []).forEach((cand, i) => {
       const pts = cand.positions || [];
-      c.save(); c.strokeStyle = '#7CFFB2'; c.lineWidth = 1.6; c.beginPath();
+      c.save(); c.strokeStyle = '#8FD19E'; c.lineWidth = 1.6; c.beginPath();
       pts.forEach((p, j) => { const q = this.gridToCanvas(p.x, p.y); j ? c.lineTo(q.cx, q.cy) : c.moveTo(q.cx, q.cy); });
       c.stroke();
       if (pts.length) {
         const last = pts[pts.length - 1], q = this.gridToCanvas(last.x, last.y);
         c.strokeRect(q.cx - Math.max(9, 1.8 * s), q.cy - Math.max(9, 1.8 * s), 2 * Math.max(9, 1.8 * s), 2 * Math.max(9, 1.8 * s));
-        c.fillStyle = '#7CFFB2'; c.font = 'bold 12px Schibsted Grotesk, sans-serif'; c.fillText(`C${i + 1}`, q.cx + Math.max(11, 2 * s), q.cy - 6);
+        c.fillStyle = '#8FD19E'; c.font = 'bold 12px Atkinson Hyperlegible Next, sans-serif'; c.fillText(`C${i + 1}`, q.cx + Math.max(11, 2 * s), q.cy - 6);
       }
       c.restore();
     });
@@ -300,7 +300,7 @@ class SkyCanvasViewer {
     const len = pxPerArcmin * arcmin, c = this.ctx, x = 16, y = h - 18;
     c.save(); c.strokeStyle = '#E9EAF2'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + len, y);
     c.moveTo(x, y - 4); c.lineTo(x, y + 4); c.moveTo(x + len, y - 4); c.lineTo(x + len, y + 4); c.stroke();
-    c.fillStyle = '#E9EAF2'; c.font = '11px Schibsted Grotesk, sans-serif'; c.textAlign = 'left';
+    c.fillStyle = '#E9EAF2'; c.font = '11px Atkinson Hyperlegible Next, sans-serif'; c.textAlign = 'left';
     c.fillText(arcmin === 0.5 ? '30″' : `${arcmin}′`, x, y - 7); c.restore();
   }
 

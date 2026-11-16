@@ -44,7 +44,7 @@ class App {
     }
     this.syncControls();
     this.load();
-    try { if (!localStorage.getItem('drift-tour-seen') && !document.body.classList.contains('embed')) this.openTour(); } catch (e) { /* sin almacenamiento */ }
+    try { if (!localStorage.getItem('drift-tour-seen') && !document.body.classList.contains('embed')) $('introBanner').hidden = false; } catch (e) { $('introBanner').hidden = false; }
   }
 
   // ------------------------------------------------------------------ API
@@ -90,8 +90,8 @@ class App {
     const el = $('targetsList');
     el.innerHTML = this.targets.map((t) => `
       <button class="target-item" role="listitem" data-target="${esc(t.id)}" aria-pressed="false">
-        <span class="target-header"><span class="target-name">${esc(t.name)}</span>
-        <span class="target-badge ${t.behavior === 'variable' ? 'variable' : ''}">${t.behavior === 'variable' ? 'Cambia de brillo' : `${(Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(1)}″/año`}</span></span>
+        <span class="target-name">${esc(t.name)}</span>
+        <span class="target-badge ${t.behavior === 'variable' ? 'variable' : ''}">${t.behavior === 'variable' ? 'varía' : `${(Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(1)}″/año`}</span>
         <span class="target-kind">${esc(t.kind)}</span>
       </button>`).join('');
     el.querySelectorAll('.target-item').forEach((b) => b.addEventListener('click', () => this.selectTarget(b.dataset.target)));
@@ -131,6 +131,11 @@ class App {
   // ------------------------------------------------------------------ eventos
   bind() {
     $('searchForm').addEventListener('submit', (e) => { e.preventDefault(); this.search(); });
+    document.querySelectorAll('.try-chip').forEach((b) => b.addEventListener('click', () => { $('nameInput').value = b.dataset.q; this.search(); }));
+    $('introClose').addEventListener('click', () => this.dismissIntro());
+    $('introTour').addEventListener('click', () => { this.dismissIntro(); this.openTour(); });
+    document.addEventListener('click', (e) => { const d = $('settings'); if (d.open && !d.contains(e.target)) d.open = false; });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('settings').open) { $('settings').open = false; $('settings').querySelector('summary').focus(); } });
     document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => this.setMode(b.dataset.mode)));
     document.querySelectorAll('.fov-btn').forEach((b) => b.addEventListener('click', () => { this.state.fov = +b.dataset.fov; this.syncControls(); this.load(); }));
     document.querySelectorAll('.det-btn').forEach((b) => b.addEventListener('click', () => {
@@ -141,7 +146,7 @@ class App {
     $('btnAllDets').addEventListener('click', () => { this.state.detectors = [1, 2, 3, 4, 5, 6]; this.syncControls(); this.load(); });
     $('optMatch').addEventListener('change', (e) => { this.state.match = e.target.checked; this.load(); });
     $('optStretch').addEventListener('change', (e) => { this.state.stretch = e.target.value; this.load(); });
-    $('btnRefresh').addEventListener('click', () => this.load({ refresh: true }));
+    $('btnRefresh').addEventListener('click', () => { $('settings').open = false; this.load({ refresh: true }); });
     $('btnPlay').addEventListener('click', () => this.togglePlay());
     $('btnPrev').addEventListener('click', () => this.step(-1));
     $('btnNext').addEventListener('click', () => this.step(1));
@@ -202,42 +207,66 @@ class App {
     document.querySelectorAll('.det-btn').forEach((b) => { const on = dets.includes(+b.dataset.det); b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
     document.querySelectorAll('.target-item').forEach((b) => { const on = b.dataset.target === s.target; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
     $('optMatch').checked = s.match; $('optStretch').value = s.stretch;
-    $('modeHint').textContent = MODE_HINTS[s.mode]; $('hudMode').textContent = MODE_NAMES[s.mode];
-    $('fovHint').textContent = s.fov >= 10 ? `Recorte de ${s.fov}′: sigue objetos rápidos, pero tarda más en cargar.` : 'Más grande sirve para seguir objetos rápidos, pero tarda más en cargar.';
+    $('modeHint').textContent = MODE_HINTS[s.mode];
+    $('fovHint').textContent = s.fov >= 10 ? `Recorte de ${s.fov}′: sigue objetos rápidos, pero tarda más.` : 'Más grande sigue objetos rápidos, pero tarda más.';
     $('compareBar').hidden = !(s.mode === 'swipe' || s.mode === 'diff');
     if (s.ra !== null) {
       const sx = AstronomicalCoords.toSexagesimal(s.ra, s.dec);
-      if (document.activeElement !== $('raInput')) $('raInput').value = sx.ra.replace(/ /g, '');
-      if (document.activeElement !== $('decInput')) $('decInput').value = sx.dec.replace(/ /g, '');
+      $('placeCoords').textContent = `RA ${sx.ra.replace(/ /g, '')} · Dec ${sx.dec.replace(/ /g, '')} · recorte ${s.fov}′`;
     }
   }
 
+  dismissIntro() { $('introBanner').hidden = true; try { localStorage.setItem('drift-tour-seen', '1'); } catch (e) { /* */ } }
+
   // ------------------------------------------------------------------ búsqueda
-  async search() {
-    const name = $('nameInput').value.trim(), ra = $('raInput').value.trim(), dec = $('decInput').value.trim();
-    this.clearNotices();
-    if (name) {
-      this.notice('info', `Buscando «${esc(name)}»…`);
-      try {
-        const r = await this.api('resolve', { name });
-        this.clearNotices();
-        this.notice('ok', `«${esc(name)}» → RA ${r.ra.toFixed(5)}°, Dec ${r.dec.toFixed(5)}° (${esc(r.source)})`);
-        this.state.target = r.target_id || null; this.state.ra = r.ra; this.state.dec = r.dec; this.state.detectors = null;
-        $('nameInput').value = '';
-        this.syncControls(); this.load(); return;
-      } catch (e) {
-        this.clearNotices(); this.notice('error', e.offline ? 'Para buscar por nombre hace falta el servidor. Prueba con coordenadas o con los casos de prueba.' : esc(e.message)); return;
-      }
+  /** Una sola caja: «ra, dec», «ra dec» (con signo en dec) o un nombre. Devuelve coordenadas, un error o null (= es un nombre). */
+  parseQuery(q) {
+    let ra = null, dec = null;
+    if (q.includes(',')) { const k = q.indexOf(','); ra = q.slice(0, k).trim(); dec = q.slice(k + 1).trim(); }
+    else {
+      const m = q.match(/^(.*?\S)\s+([+\-−–]\s*\d.*)$/);
+      if (m) { ra = m[1].trim(); dec = m[2].trim(); }
+      else { const t = q.split(/\s+/); if (t.length === 2 && t.every((x) => /^[\d.]+$/.test(x))) { ra = t[0]; dec = t[1]; } }
+    }
+    if (ra === null || !/\d/.test(ra) || !/\d/.test(dec)) return null;
+    const plain = (x) => /^[+\-−–]?\d+(\.\d+)?$/.test(x);
+    if (plain(ra) && plain(dec)) {
+      const rv = parseFloat(ra), dv = parseFloat(dec.replace(/[−–]/, '-'));
+      if (rv < 0 || rv >= 360) return { error: `La ascensión recta va de 0° a 360° (escribiste ${ra}).` };
+      if (Math.abs(dv) > 90) return { error: `La declinación va de −90° a +90° (escribiste ${dec}).` };
     }
     const c = AstronomicalCoords.parse(ra, dec);
-    if (!c.isValid) { this.notice('error', esc(c.error)); $('raInput').focus(); return; }
-    this.state.target = null; this.state.ra = c.ra; this.state.dec = c.dec; this.state.detectors = this.state.detectors || null;
-    this.syncControls(); this.load();
+    if (c.isValid) return { ra: c.ra, dec: c.dec };
+    return /^[\d\s.,:+\-−–hmsd°′″'"]+$/i.test(q) ? { error: c.error } : null;
+  }
+
+  async search() {
+    const q = $('nameInput').value.trim();
+    this.clearNotices();
+    if (!q) { this.notice('info', 'Escribe un nombre (M42) o coordenadas (133.795 -7.245).'); $('nameInput').focus(); return; }
+    const pq = this.parseQuery(q);
+    if (pq && pq.error) { this.notice('error', esc(pq.error) + ' Ejemplo: 133.795 -7.245 o 08h55m10.8s -07d14m42s.'); $('nameInput').focus(); return; }
+    if (pq) {
+      this.state.target = null; this.state.ra = pq.ra; this.state.dec = pq.dec; this.state.ref = null; this.placeLabel = null;
+      $('nameInput').value = ''; this.syncControls(); this.load(); return;
+    }
+    this.notice('info', `Buscando «${esc(q)}»…`);
+    try {
+      const r = await this.api('resolve', { name: q });
+      this.clearNotices();
+      this.notice('ok', `«${esc(q)}» → RA ${r.ra.toFixed(5)}°, Dec ${r.dec.toFixed(5)}° (${esc(r.source)})`);
+      this.state.target = r.target_id || null; this.state.ra = r.ra; this.state.dec = r.dec; this.state.detectors = null; this.state.ref = null;
+      this.placeLabel = r.target_id ? null : q;
+      $('nameInput').value = '';
+      this.syncControls(); this.load();
+    } catch (e) {
+      this.clearNotices(); this.notice('error', e.offline ? 'Para buscar por nombre hace falta el servidor. Prueba con coordenadas o con los lugares del reto.' : esc(e.message));
+    }
   }
 
   selectTarget(id) {
     const t = this.targets.find((x) => x.id === id); if (!t) return;
-    this.state.target = id; this.state.ra = t.ra; this.state.dec = t.dec; this.state.detectors = null; this.state.ref = null;
+    this.state.target = id; this.state.ra = t.ra; this.state.dec = t.dec; this.state.detectors = null; this.state.ref = null; this.placeLabel = null;
     this.clearNotices(); this.syncControls(); this.load();
   }
 
@@ -249,8 +278,8 @@ class App {
     this.showLoader(true);
     const stopPoll = this.offline ? () => {} : this.pollProgress(job);
     const t = this.targets.find((x) => x.id === s.target);
-    $('hudTarget').textContent = t ? t.name : `RA ${(+s.ra).toFixed(3)}° Dec ${(+s.dec).toFixed(3)}°`;
-    $('targetDescription').textContent = t ? t.description : 'Lugar elegido por ti.';
+    $('placeName').textContent = t ? t.name : (this.placeLabel || 'Lugar elegido por ti');
+    $('targetDescription').textContent = t ? t.description : 'Posición que escribiste. Si algo se mueve entre fechas, aparecerá en Candidatos.';
     let data = null;
     try {
       if (refresh && !this.offline) { await fetch('/api/refresh', { method: 'POST' }); }
@@ -274,7 +303,7 @@ class App {
   async loadDemo(target, err) {
     const why = err.offline ? 'No hay conexión con el servidor' : 'IRSA (NASA) no responde ahora';
     if (!target) {
-      this.notice('error', `${why}. Sin servidor solo funcionan los 5 casos de prueba guardados.`);
+      this.notice('error', `${why}. Sin servidor solo funcionan los 5 lugares del reto guardados.`);
       return null;
     }
     try {
@@ -282,7 +311,7 @@ class App {
       const b = this.demo[target];
       if (!b.view || b.view.status !== 'ok') throw new Error('sin copia');
       this.offline = !!err.offline;
-      this.notice('warn', `${why}: se muestra la copia guardada de datos reales del ${esc((b.generated_at || '').slice(0, 10))} (5′, detectores recomendados). Los cambios de opciones no aplican sin servidor.`);
+      this.notice('warn', `${why}: se muestra la copia guardada de datos reales del ${esc((b.generated_at || '').slice(0, 10))} (5′, detectores recomendados). Los ajustes de imagen no aplican sin servidor.`);
       return b.view;
     } catch (e2) {
       this.notice('error', `${why} y no hay copia guardada de este objeto.`);
@@ -298,7 +327,7 @@ class App {
       $('timeline').innerHTML = ''; this.renderMeta(); return;
     }
     (v.warnings || []).forEach((w) => this.notice('warn', esc(w)));
-    if (v.from_cache) this.notice('info', `Datos de IRSA guardados el ${esc((v.generated_at || '').replace('T', ' ').slice(0, 16))} UTC. «Buscar datos nuevos» vuelve a consultar.`);
+    if (v.from_cache) this.notice('info', `Datos de IRSA guardados el ${esc((v.generated_at || '').replace('T', ' ').slice(0, 16))} UTC. En Ajustes de imagen, «Buscar datos nuevos en IRSA» vuelve a consultar.`);
     this.state.detectors = this.state.detectors || null;
     this.viewer.setView(v.grid);
     this.viewer.track = v.track || [];
@@ -332,15 +361,20 @@ class App {
   renderTimeline() {
     const v = this.view, el = $('timeline');
     const used = new Set(v.frames.map((f) => f.epoch));
-    el.innerHTML = (v.epochs_available || []).map((e) => {
+    const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const eps = v.epochs_available || [];
+    el.innerHTML = eps.map((e, k) => {
       const fi = v.frames.findIndex((f) => f.epoch === e.index);
-      const label = e.date_start.slice(0, 7);
+      const d = new Date(e.date_start);
+      const label = isNaN(d) ? e.date_start.slice(0, 7) : `${MES[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      const prev = k ? new Date(eps[k - 1].date_start) : null;
+      const gap = prev && !isNaN(d) && !isNaN(prev) ? `+${Math.round((d - prev) / 864e5)} d` : 'primera';
       return `<button class="frame-pill ${fi === this.frameIdx ? 'active' : ''}" ${fi < 0 ? 'disabled' : ''} data-fi="${fi}"
         aria-label="Fecha ${esc(e.date_start)}, ${e.n_images} fotos${fi < 0 ? ' (sin fotos en los detectores elegidos)' : ''}"
         title="${esc(e.date_start)} → ${esc(e.date_end)} · ${e.n_images} fotos (D${e.detectors.join(',D')})">
-        <span>${label}</span><span class="frame-pill-date">${used.has(e.index) ? v.frames[fi].n_used + ' fotos' : '—'}</span></button>`;
+        <span class="fp-date">${label}</span><span class="fp-n">${used.has(e.index) ? v.frames[fi].n_used + ' fotos' : 'sin fotos'}</span><span class="fp-gap">${gap}</span></button>`;
     }).join('');
-    el.querySelectorAll('.frame-pill:not([disabled])').forEach((b) => b.addEventListener('click', () => { this.stop(); this.frameIdx = +b.dataset.fi; this.renderFrame(); }));
+    el.querySelectorAll('.frame-pill:not([disabled])').forEach((b) => b.addEventListener('click', () => { this.stop(); if (this.state.mode !== 'blink') { this.state.mode = 'blink'; this.syncControls(); } this.frameIdx = +b.dataset.fi; this.renderFrame(); }));
   }
 
   renderCompareSelects() {
@@ -390,8 +424,8 @@ class App {
   play() {
     if (!this.view || this.view.status !== 'ok' || this.view.frames.length < 2) return;
     if (this.state.mode !== 'blink') { this.setMode('blink'); return; } // setMode('blink') ya llama a play()
-    this.stop(); this.playing = true; $('btnPlay').textContent = '❚❚'; $('btnPlay').setAttribute('aria-label', 'Pausar'); this.timer = setInterval(() => { this.frameIdx++; this.renderFrame(); }, +$('speed').value); }
-  stop() { this.playing = false; clearInterval(this.timer); $('btnPlay').textContent = '▶'; $('btnPlay').setAttribute('aria-label', 'Reproducir'); }
+    this.stop(); this.playing = true; $('btnPlay').dataset.state = 'playing'; $('btnPlay').setAttribute('aria-label', 'Pausar'); this.timer = setInterval(() => { this.frameIdx++; this.renderFrame(); }, +$('speed').value); }
+  stop() { this.playing = false; clearInterval(this.timer); $('btnPlay').dataset.state = 'paused'; $('btnPlay').setAttribute('aria-label', 'Reproducir'); }
   togglePlay() { this.playing ? this.stop() : this.play(); }
   step(d) { this.stop(); if (this.state.mode !== 'blink') this.setMode('blink'); this.frameIdx += d; this.renderFrame(); }
 
@@ -483,7 +517,8 @@ class App {
     const det = v.detection || {}; const cands = det.candidates || []; const tr = det.transients || [];
     const t = this.targets.find((x) => x.id === this.state.target);
     let html = '';
-    if (!cands.length) html += `<p class="muted">No se detectaron fuentes con movimiento significativo${v.frames.length < 2 ? ' (hace falta más de una fecha)' : ''}.</p>`;
+    const cc = $('candCount'); cc.hidden = !cands.length; cc.textContent = cands.length;
+    if (!cands.length) html += `<p class="muted">No se detectaron fuentes con movimiento significativo${v.frames.length < 2 ? ' (hace falta más de una fecha)' : ''}. Cambiar el recorte o sumar los 6 detectores en Ajustes de imagen puede ayudar.</p>`;
     html += cands.map((c, i) => `
       <article class="cand-card">
         <header><strong>C${i + 1}</strong> <span class="pill ${c.quality.level}">confianza ${c.quality.level}</span></header>
@@ -501,7 +536,7 @@ class App {
       </article>`).join('');
     if (t && t.behavior === 'moving') {
       const exp = (Math.hypot(t.pmra, t.pmdec) / 1000).toFixed(2);
-      html += `<p class="hint">Referencia: ${esc(t.name)} se mueve ${exp}″/año según SIMBAD (${esc(t.ref)}). Su trayectoria esperada está en rosa.</p>`;
+      html += `<p class="hint">Referencia: ${esc(t.name)} se mueve ${exp}″/año según SIMBAD (${esc(t.ref)}). Su trayectoria esperada está en naranja.</p>`;
     }
     if (tr.length) html += `<h3 class="sub">Aparecen en una sola fecha (${tr.length})</h3><ul class="limits">${tr.map((x) => `<li>Época ${x.epoch}: ${x.ra_deg.toFixed(5)}°, ${x.dec_deg.toFixed(5)}° (S/R ${x.snr}) — ${esc(x.status)}</li>`).join('')}</ul>`;
     if (det.solar_system) html += `<p class="hint">Cotejo con asteroides/cometas: ${esc(det.solar_system.service)}, automático y aproximado${det.solar_system.epochs_failed ? ` (${det.solar_system.epochs_failed} fecha(s) sin respuesta: marcadas "sin cotejar")` : ''}. Los candidatos siguen siendo para revisión humana.</p>`;
@@ -638,10 +673,11 @@ class App {
     const steps = [
       ['Fotos del mismo lugar en distintas fechas', 'SPHEREx, un telescopio de NASA, fotografía todo el cielo en infrarrojo cada seis meses. Aquí ves fotos <strong>reales</strong> del mismo pedacito de cielo, tomadas en fechas distintas.'],
       ['Lo que se mueve, salta', 'En <strong>Parpadeo</strong> las fechas pasan como un video. Las estrellas lejanas no se mueven; una estrella cercana, una enana marrón o un asteroide sí. Así se descubrió Plutón en 1930.'],
-      ['Cada píxel es grande', 'Cada cuadradito mide 6,2″ (el grosor de un cabello a 3 metros). WISE 0855 avanza ~8″ por año: solo un poco más de un píxel. Usa el zoom y la <strong>trayectoria esperada</strong> rosa como guía.'],
+      ['Cada píxel es grande', 'Cada cuadradito mide 6,2″ (el grosor de un cabello a 3 metros). WISE 0855 avanza ~8″ por año: solo un poco más de un píxel. Usa el zoom y la <strong>trayectoria esperada</strong> naranja como guía.'],
       ['Comparar de otras formas', '<strong>Deslizador</strong>: arrastra para ver dos fechas. <strong>Diferencia</strong>: se resta una fecha y queda solo lo que cambió. <strong>Suma</strong>: junta todas para ver más débil.'],
       ['Colores invisibles', 'SPHEREx ve 102 "colores" infrarrojos. Haz clic en una estrella para ver su <strong>espectro</strong>: su huella de colores. En <strong>Brillo</strong> verás si cambió con el tiempo.'],
-      ['Candidatos, no descubrimientos', 'La herramienta señala lo que parece moverse, lo coteja con el catálogo Gaia y te deja exportarlo. Siempre hace falta que una persona lo revise.'],
+      ['Candidatos, no descubrimientos', 'La herramienta señala lo que parece moverse, lo coteja con Gaia y con asteroides y cometas conocidos (JPL), y te deja exportarlo. Siempre hace falta que una persona lo revise.'],
+      ['Lo avanzado está a un clic', 'Recorte, detectores, contraste y capas viven en <strong>Ajustes de imagen</strong>, junto al reproductor.'],
     ];
     let i = 0; const d = $('tourDialog');
     const draw = () => {
@@ -650,7 +686,7 @@ class App {
       $('tourPrev').disabled = i === 0; $('tourNext').textContent = i === steps.length - 1 ? 'Empezar' : 'Siguiente';
     };
     $('tourPrev').onclick = () => { i = Math.max(0, i - 1); draw(); };
-    $('tourNext').onclick = () => { if (i === steps.length - 1) { d.close(); try { localStorage.setItem('drift-tour-seen', '1'); } catch (e) { /* */ } } else { i++; draw(); } };
+    $('tourNext').onclick = () => { if (i === steps.length - 1) { d.close(); $('introBanner').hidden = true; try { localStorage.setItem('drift-tour-seen', '1'); } catch (e) { /* */ } } else { i++; draw(); } };
     draw(); d.showModal();
   }
 
