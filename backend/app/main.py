@@ -119,6 +119,16 @@ def spectrum(ra: str, dec: str, target: Optional[str] = None, epoch: Optional[in
     return _guard(viewer.build_spectrum, r, d, target, epoch, refresh, job)
 
 
+@app.get("/api/classify")
+def classify(ra: str, dec: str, target: Optional[str] = None, epoch: Optional[int] = None,
+             pm: Optional[float] = Query(None, ge=0, description="Movimiento propio medido (″/año), si se conoce"),
+             var: Optional[float] = Query(None, ge=0, description="Cambio de brillo máximo medido (mag), si se conoce"),
+             refresh: bool = False, job: Optional[str] = None):
+    """¿Qué tipo de objeto es? Catálogo (SIMBAD) → plantillas del espectro → contexto (movimiento, brillo, posición)."""
+    r, d = _coords(ra, dec)
+    return _guard(viewer.build_classification, r, d, target, pm, var, epoch, refresh, job)
+
+
 @app.get("/api/lightcurve")
 def lightcurve(ra: str, dec: str, target: Optional[str] = None, refresh: bool = False, job: Optional[str] = None):
     """Curva de luz comparando longitudes de onda equivalentes entre épocas."""

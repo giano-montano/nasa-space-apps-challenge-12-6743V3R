@@ -24,6 +24,7 @@ SPHEREX_S3_HTTP = os.getenv("SPHEREX_S3_HTTP", "https://nasa-irsa-spherex.s3.ama
 GAIA_ESA_TAP = os.getenv("GAIA_ESA_TAP", "https://gea.esac.esa.int/tap-server/tap/sync")
 GAIA_VIZIER_TAP = os.getenv("GAIA_VIZIER_TAP", "https://tapvizier.cds.unistra.fr/TAPVizieR/tap/sync")
 SESAME_URL = os.getenv("SESAME_URL", "https://cds.unistra.fr/cgi-bin/nph-sesame/-oIp/SNV")
+SIMBAD_TAP_URL = os.getenv("SIMBAD_TAP_URL", "https://simbad.cds.unistra.fr/simbad/sim-tap/sync")
 JPL_SBIDENT_URL = os.getenv("JPL_SBIDENT_URL", "https://ssd-api.jpl.nasa.gov/sb_ident.api")
 
 # --- Instrumento -----------------------------------------------------------
