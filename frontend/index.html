@@ -46,6 +46,7 @@
     </form>
 
     <div class="header-actions">
+      <button id="btnChat" class="btn-secondary" type="button" aria-expanded="false" aria-controls="chatPanel">✨ Copiloto IA</button>
       <button id="btnTour" class="btn-secondary" type="button">¿Qué estoy viendo?</button>
       <button id="btnShare" class="btn-secondary" type="button">Compartir / insertar</button>
       <button id="btnTheme" class="btn-secondary icon-only" type="button" aria-label="Cambiar tema claro u oscuro" title="Tema claro/oscuro">◐</button>
@@ -242,6 +243,15 @@
     </details>
   </footer>
 
+  <!-- Copiloto IA -->
+  <aside id="chatPanel" class="chat-panel" aria-label="Copiloto IA" hidden>
+    <div class="chat-head"><strong>✨ Copiloto IA</strong><button id="chatClose" class="btn-secondary" type="button" aria-label="Cerrar">✕</button></div>
+    <p class="hint chat-note">Asistente de IA (Groq). Puede equivocarse; los candidatos son preliminares y requieren revisión humana.</p>
+    <div id="chatLog" class="chat-log" aria-live="polite"></div>
+    <div id="chatSuggest" class="chat-suggest"></div>
+    <form id="chatForm" class="chat-form"><input id="chatInput" class="text-input" placeholder="Pregunta algo… (Ctrl+K)" maxlength="500" autocomplete="off"><button class="btn-primary" type="submit">Enviar</button></form>
+  </aside>
+
   <!-- Compartir -->
   <dialog id="shareDialog" class="modal-box" aria-labelledby="shareTitle">
     <h3 id="shareTitle" class="modal-title">Compartir esta vista</h3>
@@ -263,5 +273,6 @@
   <script src="./js/charts.js?v=3"></script>
   <script src="./js/canvas_viewer.js?v=3"></script>
   <script src="./js/app.js?v=3"></script>
+  <script src="./js/chat.js?v=3"></script>
 </body>
 </html>

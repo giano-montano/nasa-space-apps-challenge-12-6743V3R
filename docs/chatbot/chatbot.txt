@@ -1,0 +1,66 @@
+Para integrar un **chatbot de IA (Copiloto Astronómico)** sin saturar la interfaz ni restarle protagonismo a los datos de SPHEREx, la clave está en que el bot **no sea una simple burbuja flotante genérica**, sino un asistente contextual que interactúe directamente con el visor.
+
+Aquí tienes las mejores estrategias de UI/UX para lograrlo:
+
+---
+
+### 1. Dónde ubicarlo en la pantalla (Patrón de Layout)
+
+* **Panel Lateral Desplegable (Drawer Derecho - Recomendado):**
+  * En lugar de una burbuja flotante que tape los controles de reproducción o la brújula, coloca un botón discreto en la barra superior: `✨ Copiloto IA`.
+  * Al pulsarlo, se abre un panel lateral derecho (o una 5.ª pestaña en la columna de análisis) que empuja suavemente el contenido sin tapar el lienzo astronómico.
+* **Barra de Comandos estilo Spotlight (`Ctrl + K` / `Cmd + K`):**
+  * Para usuarios avanzados o jurados rápidos, presionar `Ctrl + K` abre una barra flotante en el centro: *"Escribe una pregunta o comando astronómico..."*.
+* **Modo Compacto / Modo Expandido:**
+  * Debe poder colapsarse en un solo clic para que el usuario siempre pueda concentrarse al 100% en la inspección visual.
+
+---
+
+### 2. Conversación Bidireccional con el Visor (El mayor diferenciador)
+
+El error común en los chatbots científicos es que están desconectados de la pantalla. Para deslumbrar al jurado, el chatbot debe **saber qué estás viendo** y **poder controlar la interfaz**:
+
+* **El bot tiene "ojos" (Context-Aware):**
+  * No le pidas al usuario que escriba coordenadas. El bot ya sabe qué target está seleccionado, qué fotograma está activo y qué modo (*blink*, diferencia o apilado) se está usando.
+  * *Ejemplo de usuario:* *"¿Por qué veo una mancha rosa en el centro?"*
+  * *Respuesta del bot:* *"Estás en el modo Diferencia de WISE 0855. Esa mancha rosa es la enana marrón tras desplazarse 8.1 arcosegundos desde 2026. Las estrellas de fondo desaparecieron porque están fijas."*
+* **Acciones en la UI ejecutadas por el bot (Function Calling):**
+  * El bot puede incluir botones de acción dentro del mensaje:
+    * *"¿Quieres ver su curva de luz? [Activar Curva de Luz]"*
+    * *"¿Quieres comparar con imágenes ópticas? [Abrir Aladin Lite]"*
+    * Si el usuario escribe: *"Muéstrame la estrella con mayor movimiento"*, el bot responde: *"Cargando la Estrella de Barnard..."* y automáticamente actualiza las coordenadas, cambia el target y activa la reproducción.
+
+---
+
+### 3. Sugerencias Rápidas ("Zero-Prompt UX")
+
+Los jurados y el público general muchas veces no saben qué preguntarle a una herramienta de astrofísica. No los dejes frente a un cuadro de texto vacío:
+
+* Coloca **3 o 4 píldoras de preguntas rápidas** que cambien según el objeto seleccionado:
+  * **Con WISE 0855:** *"¿Por qué tiene absorción de metano a 1.6 µm?"* | *"¿Qué tan fría es?"*
+  * **Con RW Aurigae:** *"¿Por qué no cambia de posición pero sí de brillo?"*
+  * **Con coordenadas libres:** *"¿Hay algún candidato a asteroide detectado en este campo?"*
+* Un solo clic en la sugerencia envía la pregunta y genera la explicación inmediata.
+
+---
+
+### 4. Tono y Pedagogía Multinivel (De niños a astrofísicos)
+
+Permite elegir el nivel de profundidad de las respuestas con un selector de 2 niveles:
+* **Modo Divulgación / Principiante:** Explica con metáforas cotidianas (ej. *"imagina tomar dos fotos de una carretera con 6 meses de diferencia: los edificios se quedan quietos, los coches se han movido"*).
+* **Modo Científico / Jurado:** Detalla flujo espectral en mJy, longitud de onda en micrómetros ($0.75 - 5.0\ \mu\text{m}$), tipos espectrales (Y0, T6, M4V) y bandas de absorción molecular ($CH_4$, $H_2O$, $CO$).
+
+---
+
+### 5. Criterios de Calidad y "Honestidad Científica" (Clave en NASA Space Apps)
+
+* **Citas de fuentes oficiales:** Las respuestas del bot deben indicar al final de dónde sale la información (ej. *Fuente: NASA/IPAC IRSA, Catálogo Gaia DR3*).
+* **Aclaración de candidatos:** Si el bot habla de un nuevo objeto móvil detectado por el usuario, debe indicar explícitamente: *"Candidato preliminar por detección de centroide; requiere confirmación astrométrica"*. Esto suma muchos puntos ante el jurado.
+
+---
+
+### Resumen de la experiencia ideal de usuario:
+1. El usuario entra a la web y ve saltar un punto en la pantalla.
+2. Abre el panel lateral del **Copiloto IA**.
+3. Hace clic en la sugerencia: *"¿Qué estoy viendo?"*.
+4. La IA le explica en dos oraciones claras qué es esa enana marrón, resalta el espectro infrarrojo en el panel derecho y le ofrece un botón para pasar automáticamente al modo *Diferencia*.

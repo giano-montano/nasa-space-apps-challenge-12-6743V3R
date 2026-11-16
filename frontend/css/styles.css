@@ -265,3 +265,20 @@ body.embed .app-header, body.embed .controls-column, body.embed .analysis-column
 body.embed .context-card, body.embed .viewer-toggles .hint-inline { display: none; }
 body.embed .app-main { grid-template-columns: 1fr; padding: 8px; }
 body.embed .canvas-container { max-height: calc(100vh - 140px); }
+
+/* ---------------------------------------------------------------- copiloto IA */
+.chat-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 100vw); z-index: 50; display: flex; flex-direction: column; gap: 8px;
+  padding: 14px; background: var(--bg-surface); border-left: 1px solid var(--border-strong); box-shadow: -8px 0 30px rgba(0,0,0,.35); }
+.chat-panel[hidden] { display: none; }
+.chat-head { display: flex; justify-content: space-between; align-items: center; }
+.chat-note { margin: 0; }
+.chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+.chat-msg { max-width: 90%; padding: 8px 12px; border-radius: var(--r-lg); font-size: 14px; line-height: 1.45; white-space: pre-wrap; }
+.chat-msg.bot { align-self: flex-start; background: var(--bg-elev); }
+.chat-msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); }
+.chat-msg.err { color: var(--red); }
+.chat-suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.chat-pill { background: transparent; border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--text-muted); cursor: pointer; }
+.chat-pill:hover { background: var(--bg-elev); }
+.chat-form { display: flex; gap: 8px; }
+.chat-form .text-input { min-width: 0; }

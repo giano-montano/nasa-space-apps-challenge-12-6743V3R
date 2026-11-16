@@ -16,7 +16,9 @@ from .catalogs import CatalogUnavailable
 from .coords import deg_to_sexagesimal, parse_coordinates
 from .irsa_client import IrsaUnavailable, clear_cache
 from .targets import public_targets, resolve_name
-from . import viewer
+from . import chat, viewer
+from pydantic import BaseModel
+import requests
 
 app = FastAPI(
     title="Drift — SPHEREx Sky Viewer API",
@@ -153,6 +155,27 @@ def refresh(stamps: bool = False):
     n = clear_cache(include_stamps=stamps)
     return {"status": "ok", "removed": n,
             "message": f"Caché borrada ({n} archivos). La próxima consulta irá a IRSA y verá los datos nuevos."}
+
+
+class ChatIn(BaseModel):
+    messages: list[dict]
+    context: dict = {}
+
+
+@app.get("/api/chat/status")
+def chat_status():
+    return {"enabled": chat.available()}
+
+
+@app.post("/api/chat")
+def chat_endpoint(body: ChatIn):
+    """Copiloto IA (Groq). Recibe el historial y el estado de la vista."""
+    if not chat.available():
+        raise HTTPException(503, "El copiloto no está configurado (falta GROQ_API_KEY en el servidor).")
+    try:
+        return {"reply": chat.ask(body.messages, body.context)}
+    except requests.RequestException:
+        raise HTTPException(503, "No pude responder ahora. Prueba de nuevo en un momento.")
 
 
 @app.exception_handler(Exception)
