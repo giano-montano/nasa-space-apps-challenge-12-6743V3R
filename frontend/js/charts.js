@@ -70,8 +70,9 @@ const REFERENCE_BANDS = [
 ];
 
 class SpectrumChart extends BaseChart {
-  setData(d) { this.data = d; this.render(); }
-  setMessage(m) { this.data = null; this.msg = m; this.render(); }
+  setData(d) { this.data = d; this.model = null; this.render(); }
+  setMessage(m) { this.data = null; this.model = null; this.msg = m; this.render(); }
+  setModel(curve, bg, label) { this.model = curve ? { curve, bg, label } : null; this.render(); }
   _move(e) {
     if (!this.data || !this.data.points || !this._pos) return;
     const r = this.canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
@@ -98,6 +99,14 @@ class SpectrumChart extends BaseChart {
       c.restore();
     }
     if (lo < 0 && hi > 0) { c.strokeStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.moveTo(this.pad.l, Y(0)); c.lineTo(this.pad.l + f.pw, Y(0)); c.stroke(); }
+    if (this.model) {
+      const clampY = (v) => Y(Math.min(Math.max(v, lo), hi));
+      const line = (cv, col, dash) => { c.save(); c.strokeStyle = col; c.lineWidth = 2; c.setLineDash(dash); c.beginPath(); cv.forEach(([x, y], i) => { const px = X(x), py = clampY(y); i ? c.lineTo(px, py) : c.moveTo(px, py); }); c.stroke(); c.restore(); };
+      if (this.model.bg) line(this.model.bg, 'rgba(183,189,210,.55)', [3, 4]);
+      line(this.model.curve, 'rgba(255,92,147,.85)', []);
+      c.save(); c.fillStyle = 'rgba(255,92,147,.95)'; c.font = '11px Schibsted Grotesk, sans-serif'; c.textAlign = 'right';
+      c.fillText(this.model.label + (this.model.bg ? ' · gris: estrella de fondo' : ''), this.pad.l + f.pw - 4, this.pad.t + f.ph - 6); c.restore();
+    }
     this._pos = [];
     pts.forEach((p) => {
       const x = X(p.wavelength_um), y = Y(p.flux_mjy), col = DET_COLORS[(p.detector || 1) - 1];

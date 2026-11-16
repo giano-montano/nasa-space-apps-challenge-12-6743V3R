@@ -39,6 +39,13 @@ def run(tid: str, refresh: bool):
         except Exception as e:
             bundle["errors"].append(f"{name}: {e}")
             traceback.print_exc()
+    if bundle.get("spectrum"):
+        try:  # sin red adicional: usa el espectro recién medido y la ficha local del objetivo
+            bundle["classification"] = viewer.build_classification(t["ra"], t["dec"], tid, spectrum=bundle["spectrum"])
+            print(f"  clasificación: {bundle['classification']['final']['verdict']}")
+        except Exception as e:
+            bundle["errors"].append(f"clasificación: {e}")
+            traceback.print_exc()
     with open(os.path.join(OUT, f"{tid}.json"), "w", encoding="utf-8") as f:
         json.dump(bundle, f)
     return bundle
