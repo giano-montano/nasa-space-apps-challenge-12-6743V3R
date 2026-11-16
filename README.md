@@ -1,10 +1,24 @@
-# Drift — SPHEREx Sky Viewer
+# Drift — watch the sky move
+
+### Type a place in the sky. See what NASA's SPHEREx telescope saw there, date by date, as a mini video. Whatever jumps is moving.
 
 **NASA Space Apps Challenge 2026 · challenge "Planet X and SPHEREx"**
 
-Enter a sky position (or the name of an object) and see the **real images** from NASA's SPHEREx mission of that place, taken on different dates, as a mini video. What jumps from place to place is moving: this is how Pluto was discovered, and how volunteers have found brown dwarfs and comets.
+## 🔭 [Try it live → drift-spherex.gianomontanoc.workers.dev](https://drift-spherex.gianomontanoc.workers.dev/)
 
-All images come from NASA/IPAC IRSA at the time of the query. Nothing is simulated, except the sensitivity test, which is labeled as such.
+No sign-up, no install, works on your phone. Click any of the 5 challenge targets (WISE 0855, Barnard's Star, Epsilon Indi B, RW Aurigae, R Draconis) and press play.
+
+> The hosted link runs in **demo mode**: the 5 test cases load instantly from a saved copy of real SPHEREx data (`frontend/demo_data/`). The full live version, which searches any coordinate or object name in NASA/IPAC IRSA on demand, runs from this repository in two commands (see [Quick start](#quick-start)).
+
+---
+
+### Why Drift
+
+- **Pluto was found by blinking two photos.** Drift gives you that same trick, with SPHEREx, in your browser: blink, swipe, difference or stack the epochs and the movers pop out.
+- **Real data, not a mock-up.** Every image comes from NASA/IPAC IRSA at query time. The only simulated thing is the sensitivity test, and it says so on screen.
+- **From "something moved" to "what is it?" in one place.** Candidates are tracked across dates, checked against Gaia DR3 and matched to known asteroids and comets (JPL Small-Body Identification), then exported as JSON/CSV for a human to review.
+- **Honest by design.** It tells you its limits (6.2″ pixels, ~3 dates per place today) and shows how many fake movers it can recover. It gets better by itself as SPHEREx keeps observing, with no code changes.
+- **Made to be shared.** Every view has a URL (`?ra=&dec=&fov=&mode=`) and an `<iframe>` embed code.
 
 ---
 
@@ -88,6 +102,7 @@ On Windows you can also double-click `start.bat`.
 Interactive documentation at `/docs`.
 
 ## Public deployment
+- **Live demo (Cloudflare):** https://drift-spherex.gianomontanoc.workers.dev/ — static frontend with the 5 offline test cases. Redeploy with `npx wrangler deploy` (config in `wrangler.jsonc`).
 - **Docker:** `docker build -t drift . && docker run -p 8000:8000 drift`
 - **Render:** "New → Blueprint" with this repository (uses `render.yaml`, with a disk for the cache).
 - After publishing, it is worth opening the 5 cases once so they are cached, and testing the link from another network.
