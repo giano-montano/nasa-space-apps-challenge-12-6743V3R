@@ -123,20 +123,20 @@ They cover the coordinate converter, proper-motion propagation, epoch grouping, 
 
 ## AI Use (Super Intelligence)
 
-Drift was built with the help of AI tools, following the NASA Space Apps SI policy. Where they were used:
+Drift was built with the help of AI tools, following the NASA Space Apps SI policy. **The team used Claude Code (Anthropic) for the whole project**, from the first idea to the deployment. Where it was used:
 
-- **Ideation or brainstorming:** [TODO: describe]
-- **Research or information gathering:** [TODO: describe]
-- **Data analysis and interpretation:** [TODO: describe, or "Not used"]
-- **Building SI/ML into the project:** the **Copiloto** tab is a chat assistant. The server (`backend/app/chat.py`) sends the user's question, the recent conversation and the current view state to the Groq API, using the model `openai/gpt-oss-120b` by default (configurable with `GROQ_MODEL`). The key (`GROQ_API_KEY`) stays on the server. Without that key the tab is hidden. [TODO: confirm with the team]
-- **Coding, debugging, or troubleshooting:** [TODO: name the tools and what they did]
-- **Writing, editing, or translation:** the English translation of the code, UI, and documentation was done with AI assistance. [TODO: name the tools]
-- **Visual design or image creation:** [TODO: describe, or "Not used"]
-- **Presentation, video, or audio:** [TODO: describe, or "Not used"]
+- **Ideation or brainstorming:** Claude Code, to shape the idea, the feature list and how to answer each requirement of the challenge.
+- **Research or information gathering:** Claude Code, to look into the SPHEREx data products, the IRSA services (SIA2/TAP, cutouts, the public AWS bucket) and the catalogs (Gaia DR3, AllWISE, JPL Small-Body Identification).
+- **Data analysis and interpretation:** Claude Code helped write and test the analysis code (epoch grouping, band matching, source detection and linking, proper-motion propagation, injection test). The team reviewed the results and is responsible for every scientific claim.
+- **Building SI/ML into the project:** the **Copiloto** tab is a chat assistant. The server (`backend/app/chat.py`) sends the user's question, the recent conversation and the current view state to the Groq API, using the model `openai/gpt-oss-120b` by default (configurable with `GROQ_MODEL`). The key (`GROQ_API_KEY`) stays on the server. Without that key the tab is hidden. This is the only AI that runs inside the product; the detection and photometry are classical algorithms, not machine learning.
+- **Coding, debugging, or troubleshooting:** Claude Code wrote and debugged the backend (FastAPI, Astropy), the frontend, the tests, and the Docker and Cloudflare deployment setup.
+- **Writing, editing, or translation:** Claude Code wrote and edited this documentation and the interface text, and did the English translation of the code, UI and documentation.
+- **Visual design or image creation:** Claude Code designed the interface (layout, styles, light and dark themes). No images or videos were generated with AI.
+- **Presentation, video, or audio:** Claude Code helped prepare the project documentation and the jury material in `docs/`. No video or audio was generated with AI.
 
 Commitments:
-- Images and videos generated with AI carry a visible "SI-generated" watermark.
-- Code and documentation generated or substantially revised with AI carry a header note. Files marked with this note: [TODO: list the files]
+- No images or videos were generated with AI, so there are no "SI-generated" watermarks to show.
+- Code and documentation were generated or substantially revised with Claude Code across the repository, so this note covers the whole project instead of marking individual files.
 - No NASA logos, flags, or mission identifiers were generated with AI.
 
 Human review: every AI output was reviewed, tested, and edited by the team. The team is responsible for all scientific claims in this project.
