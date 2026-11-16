@@ -1,0 +1,16 @@
+# Despliegue en Render (https://render.com): "New +" → "Blueprint" → elegir este repositorio.
+services:
+  - type: web
+    name: drift-spherex
+    runtime: docker
+    plan: starter            # el plan gratuito duerme y pierde la caché; starter + disco es lo recomendable
+    healthCheckPath: /api/health
+    envVars:
+      - key: CACHE_DIR
+        value: /data/cache
+      - key: SPHEREX_COLLECTIONS
+        value: spherex_dr1,spherex_qr3
+    disk:
+      name: cache
+      mountPath: /data
+      sizeGB: 5

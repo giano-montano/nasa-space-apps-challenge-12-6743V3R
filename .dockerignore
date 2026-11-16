@@ -1,0 +1,9 @@
+.venv
+.git
+**/__pycache__
+backend/app/data_cache
+docs
+promts
+mvp_viewer
+tests
+*.pptx

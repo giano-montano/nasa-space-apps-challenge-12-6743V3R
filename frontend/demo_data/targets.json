@@ -1,77 +1,92 @@
 [
   {
     "id": "wise0855",
+    "detectors": [
+      4,
+      5,
+      6
+    ],
     "name": "WISE 0855",
-    "kind": "Sub-stellar Brown Dwarf (Y-dwarf)",
-    "ra": 133.7951,
-    "dec": -7.2451,
-    "ra_sex": "08h 55m 10.83s",
-    "dec_sex": "\u221207\u00b0 14\u2032 42.5\u2033",
-    "pm_ra": -8100.0,
-    "pm_dec": 1200.0,
-    "parallax": 433.0,
-    "is_variable": false,
-    "description": "El objeto de movimiento r\u00e1pido m\u00e1s fr\u00edo jam\u00e1s descubierto fuera del Sistema Solar. A 7.5 a\u00f1os luz, muestra nubes de vapor de agua y metano.",
-    "spectral_type": "Y0 (T_eff \u2248 250 K)"
+    "simbad": "WISEA J085510.74-071442.5",
+    "kind": "Enana marrón muy fría (tipo Y)",
+    "ra": 133.81890825,
+    "dec": -7.247048,
+    "pmra": -8123.7,
+    "pmdec": 673.2,
+    "parallax": 439.0,
+    "behavior": "moving",
+    "description": "Enana marrón a ~7,4 años luz, una de las más frías conocidas. Se mueve ~8,1″/año: en SPHEREx (6,2″/píxel) se desplaza cerca de un píxel por año.",
+    "ref": "Kirkpatrick et al. 2021 (ApJS 253, 7)"
   },
   {
     "id": "barnard",
+    "detectors": [
+      1,
+      2
+    ],
     "name": "Estrella de Barnard",
+    "simbad": "Barnard's Star",
     "kind": "Enana roja cercana (M4V)",
-    "ra": 269.4521,
-    "dec": 4.6934,
-    "ra_sex": "17h 57m 48.50s",
-    "dec_sex": "+04\u00b0 41\u2032 36.2\u2033",
-    "pm_ra": -798.58,
-    "pm_dec": 10337.0,
-    "parallax": 546.98,
-    "is_variable": false,
-    "description": "La estrella solitaria m\u00e1s cercana a la Tierra (5.96 al). Su descomunal velocidad angular de 10.3 segundos de arco por a\u00f1o cruza el campo SPHEREx visiblemente.",
-    "spectral_type": "M4V (T_eff \u2248 3100 K)"
+    "ra": 269.45207696,
+    "dec": 4.69336497,
+    "pmra": -801.551,
+    "pmdec": 10362.394,
+    "parallax": 546.9759,
+    "behavior": "moving",
+    "description": "La estrella con mayor movimiento propio conocido (~10,4″/año hacia el norte), a 6 años luz.",
+    "ref": "Gaia DR3 (vía SIMBAD)"
   },
   {
-    "id": "indi",
+    "id": "eps_indi_b",
+    "detectors": [
+      4,
+      5,
+      6
+    ],
     "name": "Epsilon Indi B",
-    "kind": "Par binario de enanas marrones (T1+T6)",
-    "ra": 330.84,
-    "dec": -56.786,
-    "ra_sex": "22h 03m 21.60s",
-    "dec_sex": "\u221256\u00b0 47\u2032 09.5\u2033",
-    "pm_ra": 4130.0,
-    "pm_dec": -2530.0,
-    "parallax": 275.8,
-    "is_variable": false,
-    "description": "Sistema binario de enanas marrones T fr\u00edas que orbita una estrella K vecina a 11.8 a\u00f1os luz. Movimiento propio neto de 4.7\u2033/a\u00f1o.",
-    "spectral_type": "T1 + T6 (T_eff \u2248 1200 K)"
+    "simbad": "eps Ind B",
+    "kind": "Par de enanas marrones (T1 + T6)",
+    "ra": 331.04414659,
+    "dec": -56.7828442,
+    "pmra": 3981.977,
+    "pmdec": -2466.832,
+    "parallax": 270.658,
+    "behavior": "moving",
+    "description": "Dos enanas marrones que orbitan juntas a la estrella Epsilon Indi A (a ~6,7′ de distancia). SPHEREx no separa el par (están a ~0,7″), se ve como un solo punto que se mueve ~4,7″/año.",
+    "ref": "Gaia DR3 (vía SIMBAD)"
   },
   {
     "id": "rw_aur",
+    "detectors": [
+      3
+    ],
     "name": "RW Aurigae",
-    "kind": "Estrella variable T Tauri con ocultaciones por polvo",
-    "ra": 76.9562,
-    "dec": 30.4014,
-    "ra_sex": "05h 07m 49.50s",
-    "dec_sex": "+30\u00b0 24\u2032 05.1\u2033",
-    "pm_ra": 1.1,
-    "pm_dec": -21.4,
-    "parallax": 6.1,
-    "is_variable": true,
-    "description": "Estrella joven T Tauri con disco protoplanetario. No se traslada en el cielo, pero su brillo cae dr\u00e1sticamente debido a filamentos de polvo circunestelar.",
-    "spectral_type": "K1-K4e + disco"
+    "simbad": "RW Aur",
+    "kind": "Estrella joven variable (T Tauri)",
+    "ra": 76.95652603,
+    "dec": 30.40143817,
+    "pmra": 7.23,
+    "pmdec": -20.33,
+    "parallax": 15.42,
+    "behavior": "variable",
+    "description": "Estrella joven con disco de polvo. No se desplaza de forma visible: cambia de brillo. Mira la curva de luz.",
+    "ref": "van Leeuwen 2007 (vía SIMBAD)"
   },
   {
     "id": "r_dra",
+    "detectors": [
+      2
+    ],
     "name": "R Draconis",
-    "kind": "Estrella variable pulsante gigante tipo Mira",
-    "ra": 248.1675,
-    "dec": 66.7551,
-    "ra_sex": "16h 32m 40.20s",
-    "dec_sex": "+66\u00b0 45\u2032 18.2\u2033",
-    "pm_ra": 14.2,
-    "pm_dec": 8.7,
-    "parallax": 1.5,
-    "is_variable": true,
-    "description": "Gigante roja pulsante con periodo de ~245 d\u00edas. Expande y contrae sus capas exteriores produciendo enormes variaciones de flujo infrarrojo.",
-    "spectral_type": "M6e-M9e Mira"
+    "simbad": "R Dra",
+    "kind": "Gigante roja pulsante (tipo Mira)",
+    "ra": 248.16761083,
+    "dec": 66.75497942,
+    "pmra": -20.643,
+    "pmdec": 6.149,
+    "parallax": 1.2509,
+    "behavior": "variable",
+    "description": "Gigante roja que pulsa con un periodo de ~245 días. No se desplaza: cambia mucho de brillo en el infrarrojo. Mira la curva de luz.",
+    "ref": "Gaia DR3 (vía SIMBAD)"
   }
 ]
